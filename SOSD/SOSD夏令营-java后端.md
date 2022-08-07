@@ -105,11 +105,11 @@ SOSD夏令营-java后端
 
 - [ ] java8新特性_Lanbda和函数式接口
 
-## 2022年8月6日 Day19
+### 2022年8月6日 Day19
 
 * 医院一天, 啥也没干
 
-## 2022年8月6日 Day20
+### 2022年8月6日 Day20
 
 - [x] Git
 
@@ -117,7 +117,14 @@ SOSD夏令营-java后端
 
   但是乱改容易出问题, 反正不是中文路径, 凑合用8
 
-## 2022年8月7日 Day21
+### 2022年8月7日 Day21
 
-- [x] 将JavaSe项目代码保存至Github
-- [ ] 
+- [x] 将JavaSe项目代码保存至Github https://github.com/yJader/JavaSe
+- [x] 将笔记备份至Github https://github.com/yJader/MyNote
+
+### 周总结
+
+芜湖! Java基础完结, 一直想学的git也搞定了(是真的怕文件丢失)
+
+希望之后框架部分能学得快一点
+
