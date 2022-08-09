@@ -86,14 +86,14 @@
 
 1. 基本语法
 
-   ```
+   ```mysql
    git config --global user.name 用户名
    git config --global user.email 邮箱
    ```
 
 2. 案例实操
 
-   ```
+   ```mysql
    全局范围的签名设置：
    14258@LAPTOP-PJGCAD1J MINGW64 ~
    $ git config --global user.name yJader
