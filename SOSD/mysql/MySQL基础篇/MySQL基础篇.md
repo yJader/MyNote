@@ -1358,19 +1358,24 @@ FROM employees
 WHERE department_id = 50;
 ```
 
-3. 问题：用count(*)，count(1)，count(列名)谁好呢?
-   * 其实，对于MyISAM引擎的表是没有区别的。这种引擎内部有一计数器在维护着行数。 Innodb引擎的表用count(*),count(1)直接读行数，复杂度是O(n)，因为innodb真的要去数一遍。但好 于具体的count(列名)。
+3. 问题：用count(*)，count(1)，count(具体字段)哪个效率更高
+
+   * 加果使用的是MyISAM存储引擎，则三者效率相同，都是O(1), 这种引擎内部有一计数器在维护着行数
+   * 加果使用的是InnoDB存储引擎，则三者效率:COUNT(*) = COUNT (1)> COUNT(字段)
+
+   * Innodb引擎的表用count(*),count(1)直接读行数，复杂度是O(n)，因为innodb真的要去数一遍。但好于具体的count(列名)。
 
 4. 问题：能不能使用count(列名)替换count(*)?
 
-* 不要使用 count(列名)来替代 count(*) ， count(*) 是 SQL92 定义的标准统计行数的语法，跟数据库无关，跟 NULL 和非 NULL 无关。 说明：count(*)会统计值为 NULL 的行，而 count(列名)不会统计此列为 NULL 值的行。
+   * 不要使用 count(列名)来替代 count(*) ， count(*) 是 SQL92 定义的标准统计行数的语法，跟数据库无关，跟 NULL 和非 NULL 无关。 说明：count(*)会统计值为 NULL 的行，而 count(列名)不会统计此列为 NULL 值的行。
 
-* ```mysql
-  SELECT COUNT(*), COUNT(commission_pct)
-  FROM employees;
-  # 107, 35
-  COUNT(commission_pct) 只统计不为 NULL 的行
-  ```
+   * ```mysql
+     SELECT COUNT(*), COUNT(commission_pct)
+     FROM employees;
+     # 107, 35
+     COUNT(commission_pct) 只统计不为 NULL 的行
+     ```
+
 
 
 
@@ -1378,105 +1383,194 @@ WHERE department_id = 50;
 
 #### 2.1 基本使用
 
-可以使用GROUP BY子句将表中的数据分成若干组
+1. 作用: 可以使用GROUP BY子句将表中的数据==分成若干组==
 
-```mysql
-SELECT column, group_function(column)
-FROM table
-[WHERE condition]
-[GROUP BY group_by_expression]
-[ORDER BY column];
-```
+2. 语法格式:
+    ```mysql
+    SELECT column, group_function(column)
+    FROM table
+    [WHERE condition]
+    [GROUP BY group_by_expression]
+    [ORDER BY column];
+    ```
 
-> 结论1：SELECT中出现的非组函数的字段必须声明在GROUP BY中。
->
-> ​			反之，GROUP BY中声明的字段可以不出现在SELECT中。
->
-> 结论2：GROUP BY声明在FROM后面、WHERE后面、ORDER BY前面、LIMIT前面。
+3. 使用例
 
-#### 2) 使用WITH ROLLUP
+    ```mysql
+    # 需求: 查询各个部门的平均工资, 最高工资
+    SELECT department_id, AVG(salary), MAX(salary), COUNT(*) 
+    FROM employees
+    GROUP BY department_id;
+    
+    -- 多列分组
+    # 需求: 查询各个department_id,中, 相同job_id的平均工资
+    # 方式1:
+    SELECT job_id, department_id, AVG(salary)
+    FROM employees
+    GROUP BY job_id, department_id;
+    # 方式2: 
+    SELECT department_id, job_id, AVG(salary)
+    FROM employees
+    GROUP BY department_id, job_id;
+    # 两种结果一致, 因为只有部门和工种均一致的员工才会被分到一组
+    ```
 
-```mysql
-SELECT department_id,AVG(salary)
-FROM employees
-WHERE department_id > 80
-GROUP BY department_id WITH ROLLUP;
-```
+4. 注意点: 
 
-> 注意： 当使用ROLLUP时，不能同时使用ORDER BY子句进行结果排序，即ROLLUP和ORDER BY是互相排斥的。
+    1. ELECT中出现的非聚合函数的字段必须声明在GROUP BY中。
+
+        反之，GROUP BY中声明的字段可以不出现在SELECT中。
+
+    2. 分组时不能一对多
+
+        ```mysql
+        SELECT department_id, job_id, AVG(salary)
+        FROM employees
+        GROUP BY department_id;
+        # 此时, 数据只按照department_id分组, 相同的department_id只会显示一行
+        # 但是相同部门中存在不同的job_id, 会造成错误的一对多, 会报错
+        # 注意: navicat中并不会报错
+        ```
+
+    3. GROUP BY声明位置: 
+
+        * GROUP BY声明在FROM后面、WHERE后面、ORDER BY前面、LIMIT前面。
+
+
+#### 4.2 使用WITH ROLLUP
+
+1. 作用: 在分组之后, 将所有数据再看做一组, 分出一组
+
+2. 使用例
+    ```mysql
+    SELECT department_id,AVG(salary)
+    FROM employees
+    GROUP BY department_id WITH ROLLUP;
+    ```
+    
+3. 注意： 当使用ROLLUP时，不能同时使用ORDER BY子句进行结果排序，即ROLLUP和ORDER BY是互相排斥的。
+
+    ```mysql
+    SELECT department_id,AVG(salary) avg_sal 
+    FROM employees
+    GROUP BY department_id WITH ROLLUP
+    ORDER BY avg_sal;
+    # 在navicat中不会报错, 但没有意义, 因为排序后并不知道ROLLUP的组的位置
+    ```
+
+    
 
 ### 3. HAVING
 
-#### 1) 基本使用
+#### 3.1 基本使用
 
-过滤分组：HAVING子句 
+1. 作用: 过滤分组
 
-1. 行已经被分组。 
-2. 使用了聚合函数。 
-3. 满足HAVING 子句中条件的分组将被显示。 
-4. HAVING 不能单独使用，必须要跟 GROUP BY 一起使用。
+2. 使用条件:
+   1. 行已经被分组。 
+   2. 使用了聚合函数。 
+   3. 满足HAVING 子句中条件的分组将被显示。 
+   4. HAVING ==不能单独使用==，必须要跟 GROUP BY 一起使用。
+
+3. 使用例:
+
+    ```mysql
+    # 查询各个部门中最高工资比10000高的部门信息
+    SELECT department_id, MAX(salary)
+    FROM employees
+    GROUP BY department_id
+    HAVING MAX(salary)>10000;
+    ```
+
+4. 注意点: 
+
+   1. 如果过滤条件中使用了==聚合函数==，则必须使用HAVING来替换WHERE。否则，报错。
+
+      ```mysql
+      # 错误的写法:
+      SELECT department_id, MAX(salary)
+      FROM employees
+      WHERE MAX(salary) > 10000
+      GROUP BY department_id;
+      
+      > 1111 - Invalid use of group function
+      ```
+
+      当过滤条件中没有聚合函数时，则次过滤条件声明在WHERE中或HAVING中都可以。但是，声明在WHERE中的==执行效率高==。
+
+      * 所以建议将非聚合函数的过滤条件声明在WHERE中
+
+   3. HAVING必须声明在GROUP BY 的后面
+
+   4. 开发中，我们使用HAVING的前提是SQL中使用了GROUP BY。
+   
+
+#### 3.2 WHERE和HAVING的对比
+
+1. 从适用范围上看, ==HAVING的适用范围更广==
+   
+   * WHERE 可以直接使用表中的字段作为筛选条件，但不能使用分组中的计算函数作为筛选条件;
+   
+     HAVING 必须要与 GROUP BY 配合使用，可以把分组计算的函数和分组字段作为筛选条件。
+   
+   * **原理**: 在查询语法结构中，WHERE 在 GROUP BY 之前，所以无法对分组结果进行筛选<font color='orange'>(此时甚至还没有分组)</font>。HAVING 在 GROUP BY 之后，可以使用分组字段和分组中的计算函数，对分组的结果集进行筛选。另外，WHERE排除的记录不再包括在分组中。<font color='orange'>(`WHERE` -> `GROUP BY` -> `HAVING`)</font>
+   
+2. 若过滤条件中没有聚合函数, ==WHERE的执行效率高==于HAVING
+   
+   * 这一点在关联表查询中尤为突出, 通过连接从关联表中获取需要的数据，WHERE 是先筛选后连接，而 HAVING 是先连接后筛选。
+   
+     * WHERE 可以先筛选，用一个筛选后的较小数据集和关联表进行连接，这样占用的资源比较少，执行效率也比较高。
+   
+     * HAVING 则需要 先把结果集准备好，也就是用未被筛选的数据集进行关联，然后对这个大的数据集进行筛选，这样占用的资源就比较多，执行效率也较低。
+   
+   * <font color='#66ccff'>例: 找出每个部门最高薪资，显示其中大于等3000的。</font>
+     * 若采用HAVING 则首先表示出每一个组的最大sal, 然后再找出其中>=3000的项
+     * 若采用WHERE 则首先给出>=3000的项, 在分组查询直接得到结果
+   
+3. 小结：
+
+   | 关键字 | 用法                         | 缺点                                   |
+   | ------ | ---------------------------- | -------------------------------------- |
+   | WHERE  | 先筛选数据再关联，执行效率高 | 不能使用分组中的计算函数进行筛选       |
+   | HAVING | 可以使用分组中的计算函数     | 在最后的结果集中进行筛选，执行效率较低 |
+
+4. **开发中的选择：** 
+
+   * WHERE 和 HAVING 也不是互相排斥的，我们可以在一个查询里面同时使用 WHERE 和 HAVING。
+
+     包含分组统计函数的条件用 HAVING，普通条件用 WHERE。
+     
+     这样，我们就既利用了 WHERE 条件的高效快速，又发挥了 HAVING 可以使用包含分组统计函数的查询条件的优点。当数据量特别大的时候，运行效率会有很大的差别。
+     
+     
+
+### *4. SELECT的执行过程
+
+#### 4.1 查询的结构
 
 ```mysql
-SELECT department_id, MAX(salary)
-FROM employees
-GROUP BY department_id
-HAVING MAX(salary)>10000 ;
-```
-
-**要求**
-
-+ 如果过滤条件中使用了聚合函数，则必须使用HAVING来替换WHERE。否则，报错。
-+ 当过滤条件中没有聚合函数时，则次过滤条件声明在WHERE中或HAVING中都可以。但是，建议声明在WHERE中的执行效率高。
-+ HAVING必须声明在GROUP BY 的后面
-+ 开发中，我们使用HAVING的前提是SQL中使用了GROUP BY。
-
-#### 2) WHERE和HAVING的对比
-
-**区别1：WHERE 可以直接使用表中的字段作为筛选条件，但不能使用分组中的计算函数作为筛选条件； HAVING 必须要与 GROUP BY 配合使用，可以把分组计算的函数和分组字段作为筛选条件。**
-
-这决定了，在需要对数据进行分组统计的时候，HAVING 可以完成 WHERE 不能完成的任务。这是因为， 在查询语法结构中，WHERE 在 GROUP BY 之前，所以无法对分组结果进行筛选。HAVING 在 GROUP BY 之 后，可以使用分组字段和分组中的计算函数，对分组的结果集进行筛选，这个功能是 WHERE 无法完成 的。另外，WHERE排除的记录不再包括在分组中。
-
-**区别2：如果需要通过连接从关联表中获取需要的数据，WHERE 是先筛选后连接，而 HAVING 是先连接 后筛选。**
-
-这一点，就决定了在关联查询中，WHERE 比 HAVING 更高效。因为 WHERE 可以先筛选，用一 个筛选后的较小数据集和关联表进行连接，这样占用的资源比较少，执行效率也比较高。HAVING 则需要 先把结果集准备好，也就是用未被筛选的数据集进行关联，然后对这个大的数据集进行筛选，这样占用 的资源就比较多，执行效率也较低。
-
-小结如下：
-
-| 关键字 | 用法                         | 缺点                                   |
-| ------ | ---------------------------- | -------------------------------------- |
-| WHERE  | 先筛选数据再关联，执行效率高 | 不能使用分组中的计算函数进行筛选       |
-| HAVING | 可以使用分组中的计算函数     | 在最后的结果集中进行筛选，执行效率较低 |
-
-**开发中的选择：** 
-
-WHERE 和 HAVING 也不是互相排斥的，我们可以在一个查询里面同时使用 WHERE 和 HAVING。包含分组 统计函数的条件用 HAVING，普通条件用 WHERE。这样，我们就既利用了 WHERE 条件的高效快速，又发 挥了 HAVING 可以使用包含分组统计函数的查询条件的优点。当数据量特别大的时候，运行效率会有很 大的差别。
-
-### 4. SELECT的执行过程
-
-#### 1) 查询的结构
-
-```mysql
-#方式1：
-SELECT ...,....,...
-FROM ...,...,....
+#SQL92
+SELECT (DISTINCT) ..., ...., ...
+FROM table1, table2, table3
 WHERE 多表的连接条件
-AND 不包含组函数的过滤条件
-GROUP BY ...,...
-HAVING 包含组函数的过滤条件
-ORDER BY ... ASC/DESC
-LIMIT ...,...
-#方式2：
-SELECT ...,....,...
+AND 不包含聚合函数的过滤条件
+GROUP BY ..., ...
+HAVING 包含聚合函数的过滤条件
+ORDER BY ... (ASC / DESC)
+LIMIT ..., ...
+
+#SQL99
+SELECT (DISTINCT) ...,....,...
 FROM ... JOIN ...
 ON 多表的连接条件
 JOIN ...
 ON ...
-WHERE 不包含组函数的过滤条件
-AND/OR 不包含组函数的过滤条件
+WHERE 不包含聚合函数的过滤条件
+AND/OR 不包含聚合函数的过滤条件
 GROUP BY ...,...
-HAVING 包含组函数的过滤条件
-ORDER BY ... ASC/DESC
-LIMIT ...,...
+HAVING 包含聚合函数的过滤条件
+ORDER BY ... (ASC / DESC)
+LIMIT ..., ...
 #其中：
 #（1）from：从哪些表中筛选
 #（2）on：关联多表查询时，去除笛卡尔积
@@ -1487,35 +1581,36 @@ LIMIT ...,...
 #（7）limit：分页
 ```
 
-**需要记住 SELECT 查询时的两个顺序：**
+1. 关键字的书写顺序
 
-<font color=red>1. 关键字的顺序是不能颠倒的：</font>
+    ```mysql
+    SELECT ... FROM ... WHERE ... GROUP BY ... HAVING ... ORDER BY ... LIMIT...
+    ```
 
-```mysql
-SELECT ... FROM ... WHERE ... GROUP BY ... HAVING ... ORDER BY ... LIMIT...
-```
+2. 关键字的执行顺序（在 MySQL 和 Oracle 中，SELECT 执行顺序基本相同）：
 
-<font color=red>1. SELECT 语句的执行顺序</font>（在 MySQL 和 Oracle 中，SELECT 执行顺序基本相同）：
+    ```mysql
+    # SQL92
+    FROM -> WHERE -> GROUP BY -> HAVING -> SELECT 的字段 -> DISTINCT -> ORDER BY -> LIMIT
+    # SQL99
+    FROM -> ON -> (LEFT / RIGHT JOIN) -> WHERE -> GROUP BY -> HAVING -> SELECT 的字段 -> DISTINCT -> ORDER BY -> LIMIT
+    ```
 
-```mysql
-FROM -> WHERE -> GROUP BY -> HAVING -> SELECT 的字段 -> DISTINCT -> ORDER BY -> LIMIT
-```
+3. 例
 
-比如你写了一个 SQL 语句，那么它的关键字顺序和执行顺序是下面这样的：
+    ```mysql
+    SELECT DISTINCT player_id, player_name, count(*) as num # 顺序 5
+    FROM player JOIN team ON player.team_id = team.team_id # 顺序 1
+    WHERE height > 1.80 # 顺序 2
+    GROUP BY player.team_id # 顺序 3
+    HAVING num > 2 # 顺序 4
+    ORDER BY num DESC # 顺序 6
+    LIMIT 2 # 顺序 7
+    ```
 
-```mysql
-SELECT DISTINCT player_id, player_name, count(*) as num # 顺序 5
-FROM player JOIN team ON player.team_id = team.team_id # 顺序 1
-WHERE height > 1.80 # 顺序 2
-GROUP BY player.team_id # 顺序 3
-HAVING num > 2 # 顺序 4
-ORDER BY num DESC # 顺序 6
-LIMIT 2 # 顺序 7
-```
+>  在 SELECT 语句执行这些步骤的时候，每个步骤都会产生一个 虚拟表 ，然后将这个虚拟表传入下一个步 骤中作为输入。需要注意的是，这些步骤隐含在 SQL 的执行过程中，对于我们来说是不可见的。
 
-在 SELECT 语句执行这些步骤的时候，每个步骤都会产生一个 虚拟表 ，然后将这个虚拟表传入下一个步 骤中作为输入。需要注意的是，这些步骤隐含在 SQL 的执行过程中，对于我们来说是不可见的。
-
-#### 2) SQL的执行原理
+#### 4.2 SQL的执行原理
 
 SELECT 是先执行 FROM 这一步的。在这个阶段，如果是多张表联查，还会经历下面的几个步骤：
 
