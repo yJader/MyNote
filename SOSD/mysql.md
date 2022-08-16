@@ -1,4 +1,4 @@
-* 2. mysql安装
+* 2. sql安装
 
 参考: https://blog.csdn.net/weixin_43605266/article/details/110477391
 

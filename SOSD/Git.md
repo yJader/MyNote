@@ -122,7 +122,7 @@
 
 2. 使用例
 
-   ```python
+   ```mysql
    14258@LAPTOP-PJGCAD1J MINGW64 /e/Work/GitSpace/gitDemo
    $ git init
    Initialized empty Git repository in E:/Work/GitSpace/gitDemo/.git/
@@ -148,7 +148,7 @@
 
    * 首次查看(工作区没有文件)
 
-     ```python
+     ```mysql
      14258@LAPTOP-PJGCAD1J MINGW64 /e/Work/GitSpace/gitDemo (master)
      $ git status
      On branch master
@@ -161,7 +161,7 @@
 
    * 添加Hello.txt文件后, 再次查看
 
-     ```python
+     ```mysql
      14258@LAPTOP-PJGCAD1J MINGW64 /e/Work/GitSpace/gitDemo (master)
      $ git status
      On branch master
@@ -186,7 +186,7 @@
 
    * 将文件提交到暂存区
    
-     ```python
+     ```mysql
      14258@LAPTOP-PJGCAD1J MINGW64 /e/Work/GitSpace/gitDemo (master)
      $ git add hello.txt
      warning: in the working copy of 'hello.txt', LF will be replaced by CRLF the next time Git touches it
@@ -207,7 +207,7 @@
 
    * 删除暂存区文件
    
-     ```python
+     ```mysql
      14258@LAPTOP-PJGCAD1J MINGW64 /e/Work/GitSpace/gitDemo (master)
      $ git rm --cached hello.txt
      rm 'hello.txt'
@@ -239,7 +239,7 @@
 
    * 将文件提交到暂存区
 
-     ```python
+     ```mysql
      14258@LAPTOP-PJGCAD1J MINGW64 /e/Work/GitSpace/gitDemo (master)
      $ git commit -m "my first commit" hello.txt
      warning: in the working copy of 'hello.txt', LF will be replaced by CRLF the next time Git touches it
@@ -256,7 +256,7 @@
    
    * 查看日志信息
 
-     ```python
+     ```mysql
      14258@LAPTOP-PJGCAD1J MINGW64 /e/Work/GitSpace/gitDemo (master)
      $ git reflog
      a1bb2f8 (HEAD -> master) HEAD@{0}: commit (initial): my first commit
@@ -276,7 +276,7 @@
 
 * 修改文件
 
-  ```python
+  ```mysql
   14258@LAPTOP-PJGCAD1J MINGW64 /e/Work/GitSpace/gitDemo (master)
   $ cat hello.txt
   hello world! hello git! 12345678
@@ -293,7 +293,7 @@
 
 * 查看状态
 
-  ```python
+  ```mysql
   14258@LAPTOP-PJGCAD1J MINGW64 /e/Work/GitSpace/gitDemo (master)
   $ git status
   On branch master
@@ -308,7 +308,7 @@
 
 * 将修改的文件再次添加暂存区
 
-  ```python
+  ```mysql
   14258@LAPTOP-PJGCAD1J MINGW64 /e/Work/GitSpace/gitDemo (master)
   $ git add hello.txt
   warning: in the working copy of 'hello.txt', LF will be replaced by CRLF the next time Git touches it
@@ -336,7 +336,7 @@
 
 2. 使用例
 
-   ```python
+   ```mysql
    //提交了第二个版本的hello.txt
    14258@LAPTOP-PJGCAD1J MINGW64 /e/Work/GitSpace/gitDemo (master)
    $ git commit hello.txt
@@ -375,7 +375,7 @@
 
 2. 使用例
 
-   ```python
+   ```mysql
    //先查看当前的历史记录, 可以看到当前版本是bc9b393
    14258@LAPTOP-PJGCAD1J MINGW64 /e/Work/GitSpace/gitDemo (master)
    $ git reflog
@@ -436,7 +436,7 @@
 
 2. 使用例
 
-   ```python
+   ```mysql
    14258@LAPTOP-PJGCAD1J MINGW64 /e/Work/GitSpace/gitDemo (master)
    $ git branch -v
    * master a1bb2f8 my first commit
@@ -451,7 +451,7 @@
 
 2. 使用例
 
-   ```python
+   ```mysql
    14258@LAPTOP-PJGCAD1J MINGW64 /e/Work/GitSpace/gitDemo (master)
    $ git branch hot-fix
    
@@ -464,7 +464,7 @@
 
 #### 2.3 修改分支
 
-```python
+```mysql
 //在master分支上修改
 14258@LAPTOP-PJGCAD1J MINGW64 /e/Work/GitSpace/gitDemo (master)
 $ vim hello.txt
@@ -504,7 +504,7 @@ hello world! hello git!
 
 2. 使用例
 
-   ```python
+   ```mysql
    //切换到hot-fix分支
    14258@LAPTOP-PJGCAD1J MINGW64 /e/Work/GitSpace/gitDemo (master)
    $ git checkout hot-fix
@@ -571,7 +571,7 @@ hello world! hello git!
 
 1. 冲突产生的表现: 后面状态为 MERGING 
 
-   ```python
+   ```mysql
    14258@LAPTOP-PJGCAD1J MINGW64 /e/Work/GitSpace/gitDemo (master|MERGING)
    $ cat hello.txt
    hello world! hello git! 1111111
@@ -594,7 +594,7 @@ hello world! hello git!
 
 2. 冲突产生的原因: 合并分支时，两个分支在==同一个文件的同一个位置==有两套完全不同的修改。 Git无法替我们决定使用哪一个。必须==人为决定==新代码内容。
 
-   ```python
+   ```mysql
    14258@LAPTOP-PJGCAD1J MINGW64 /e/Work/GitSpace/gitDemo (master|MERGING)
    $ git status
    On branch master
@@ -615,7 +615,7 @@ hello world! hello git!
    * 编辑有冲突的文件，删除特殊符号，决定要使用的内容
      特殊符号：**<<<<<<< HEAD** 当前分支的代码 **\=\=\=\=\=\=\=** 合并过来的代码 **>>>>>>> hot-fix**
 
-     ```python
+     ```mysql
      14258@LAPTOP-PJGCAD1J MINGW64 /e/Work/GitSpace/gitDemo (master|MERGING)
      $ vim hello.txt
      
@@ -646,7 +646,7 @@ hello world! hello git!
 
    * 执行提交 注意: 此时使用git commit 时不能带文件名
 
-     ```python
+     ```mysql
      14258@LAPTOP-PJGCAD1J MINGW64 /e/Work/GitSpace/gitDemo (master|MERGING)
      $ git commit -m "merge test" hello.txt
      fatal: cannot do a partial commit during a merge. //无法在合并时进行部分提交
@@ -701,7 +701,7 @@ hello world! hello git!
 
 2. 使用例
 
-   ```python
+   ```mysql
    14258@LAPTOP-PJGCAD1J MINGW64 /e/Work/GitSpace/gitDemo (master)
    $ git remote -v
    
@@ -723,7 +723,7 @@ hello world! hello git!
 
 2. 使用例
 
-   ```python
+   ```mysql
    14258@LAPTOP-PJGCAD1J MINGW64 /e/Work/GitSpace/gitDemo (master)
    $ git push git-demo master
    Enumerating objects: 15, done.
@@ -748,7 +748,7 @@ hello world! hello git!
 
 2. 使用例
 
-   ```python
+   ```mysql
    14258@LAPTOP-PJGCAD1J MINGW64 /e/Work/GitSpace/gitDemo (master)
    $ git pull git-demo master
    remote: Enumerating objects: 5, done.
@@ -763,7 +763,8 @@ hello world! hello git!
    Fast-forward
     hello.txt | 1 +
     1 file changed, 1 insertion(+)
-   //说明拉取会自动提交到本地库
+    
+   # 说明拉取会自动提交到本地库
    14258@LAPTOP-PJGCAD1J MINGW64 /e/Work/GitSpace/gitDemo (master)
    $ git status
    On branch master
@@ -795,7 +796,7 @@ hello world! hello git!
 
 2. 使用例
 
-   ```python
+   ```mysql
    14258@LAPTOP-PJGCAD1J MINGW64 /e/Work/GitSpace/gitCloneTest
    $ git clone https://github.com/yJader/git-demo.git
    Cloning into 'git-demo'...
@@ -826,7 +827,7 @@ hello world! hello git!
 
 * 在另一个本地库push
 
-  ```python
+  ```mysql
   //修改最后一行
   14258@LAPTOP-PJGCAD1J MINGW64 /e/Work/GitSpace/gitCloneTest/git-demo (master)
   $ cat hello.txt
@@ -868,7 +869,7 @@ hello world! hello git!
 
 * 在原本地库pull
 
-  ```python
+  ```mysql
   14258@LAPTOP-PJGCAD1J MINGW64 /e/Work/GitSpace/gitDemo (master)
   $ git pull git-demo master
   remote: Enumerating objects: 5, done.
@@ -972,7 +973,7 @@ hello world! hello git!
 
 2. 通过 SSH 协议克隆版本库，你可以指定一个 ssh:// 的 URL：
 
-   ```python
+   ```mysql
    $ git clone ssh://[user@]server/project.git
    #或者使用一个简短的 scp 式的写法：
    $ git clone [user@]server:project.git
@@ -1008,7 +1009,7 @@ hello world! hello git!
 
       * git.ignore文件模板
 
-        ```python
+        ```mysql
         ######################
         # 解决java产生文件
         ######################
@@ -1093,7 +1094,7 @@ hello world! hello git!
 
    2. 让`.gitconfig`引用这个文件
 
-      ```python
+      ```mysql
       [user]
       	name = yJader
       	email = yj1425840290@gmail.com
@@ -1106,3 +1107,16 @@ hello world! hello git!
 * ignore在测试项目(git-test)中起效, 但在之前已经建好的项目(JaveSe)中无效, 最后使用插件解决
   * https://blog.csdn.net/qq_34590097/article/details/56284935
 
+
+
+# 七、一些补充
+
+##### 1. 修改已经提交的commit信息
+
+* 有时会手误, commit信息打错, 需要修改commit信息
+
+* 修改最后一次提交的注释: `git commit --amend`, 在第一行修改注释
+  
+* 修改以前提交的注释: `git rebase -i HEAD~n`<font color='orange'>(n指倒数第n次的提交)</font>
+  
+  
