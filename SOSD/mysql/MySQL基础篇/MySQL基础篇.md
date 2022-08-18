@@ -1310,22 +1310,19 @@ MySQL中有些函数无法对其进行具体的分类，但是这些函数在MyS
 
 1. 什么是聚合函数
    * 聚合函数作用于一组数据，并对一组数据返回一个值。
-
 2. 聚合函数类型
 
    * AVG() 平均
-
    * SUM() 和
-
    * MAX() 最大
-
    * MIN() 最小
-
    * COUNT() 计数
+3. 注意点(补充用):
+   * 聚合函数不能嵌套使用, 单行函数可以
 
 #### 1.1 AVG和SUM函数
 
-```mysql
+```mysql 
 SELECT AVG(salary), MAX(salary),MIN(salary), SUM(salary)
 FROM employees
 WHERE job_id LIKE '%REP%';
@@ -1566,7 +1563,7 @@ ON 多表的连接条件
 JOIN ...
 ON ...
 WHERE 不包含聚合函数的过滤条件
-AND/OR 不包含聚合函数的过滤条件
+AND / OR 不包含聚合函数的过滤条件
 GROUP BY ...,...
 HAVING 包含聚合函数的过滤条件
 ORDER BY ... (ASC / DESC)
@@ -1633,42 +1630,71 @@ SELECT 是先执行 FROM 这一步的。在这个阶段，如果是多张表联�
 
 ### 1. 基本使用
 
-+ 子查询的基本语法结构：
+1. 子查询的基本语法结构：![image-20220603133759153](MySQL基础篇.assets/image-20220603133759153.png)
 
-![image-20220603133759153](MySQL基础篇.assets/image-20220603133759153.png)
+2. 子查询（内查询）在主查询之前一次执行完成。
 
-+ 子查询（内查询）在主查询之前一次执行完成。
-+ 子查询的结果被主查询（外查询）使用 。
-+ **注意事项**
-  + 子查询要包含在括号内
-  + 将子查询放在比较条件的右侧
-  + 单行操作符对应单行子查询，多行操作符对应多行子查询
+3. 子查询的==结果==被主查询（外查询）使用 。
+
+4. **注意事项**
+
+   + 子查询要包含在括号内
+
+   + 将子查询放在比较条件的右侧 <font color='orange'>(提高可读性)</font>
+
+   + 单行操作符对应单行子查询，多行操作符对应多行子查询
+
+5. 使用例
+
+   ```mysql
+   # 需求: 谁的工资比Abel高
+   
+   # 方式1: 不使用子查询
+   SELECT salary
+   FROM employees
+   WHERE last_name = 'Abel';
+   
+   SELECT last_name, salary
+   FROM employees
+   WHERE salary > 11000;
+   
+   # 方式2: 自连接
+   SELECT e1.last_name, e1.salary
+   FROM employees e1, employees e2
+   WHERE e1.salary > e2.salary
+   AND e2.last_name = 'Abel';
+   
+   # 方式2: 子查询
+   SELECT last_name, salary
+   FROM employees
+   WHERE salary > (
+                   SELECT salary
+                   FROM employees
+                   WHERE last_name = 'Abel'
+                   )
+   ;
+   ```
+
+   
 
 ### 2. 子查询的分类
 
-**分类方式1：**
+1. 我们按内查询的结果返回一条还是多条记录，将子查询分为<font color='#66ccff'>单行子查询 </font>、<font color='#66ccff'>多行子查询</font> 。
 
-我们按内查询的结果返回一条还是多条记录，将子查询分为 单行子查询 、 多行子查询 。
+   + 单行子查询![image-20220603135507360](MySQL基础篇.assets/image-20220603135507360.png)
 
-+ 单行子查询
+   + 多行子查询![image-20220603135544144](MySQL基础篇.assets/image-20220603135544144.png)
 
-![image-20220603135507360](MySQL基础篇.assets/image-20220603135507360.png)
 
-+ 多行子查询
+2. 我们按内查询是否被执行多次，将子查询划分为 <font color='#66ccff'>相关(或关联)子查询</font> 和 <font color='#66ccff'>不相关(或非关联)子查询</font> 。 
 
-![image-20220603135544144](MySQL基础篇.assets/image-20220603135544144.png)
+   * 不相关子查询: 子查询从数据表中查询了数据结果，如果这个数据结果只执行一次，然后这个数据结果作为主查询的条件进行执行。 
 
-**分类方式2：**
-
-我们按内查询是否被执行多次，将子查询划分为 相关(或关联)子查询 和 不相关(或非关联)子查询 。 
-
-子查询从数据表中查询了数据结果，如果这个数据结果只执行一次，然后这个数据结果作为主查询的条件进行执行，那么这样的子查询叫做不相关子查询。 
-
-同样，如果子查询需要执行多次，即采用循环的方式，先从外部查询开始，每次都传入子查询进行查询，然后再将结果反馈给外部，这种嵌套的执行方式就称为相关子查询。
+   * 相关子查询: 如果子查询需要执行多次，即采用循环的方式，先从外部查询开始，每次都传入子查询进行查询，然后再将结果反馈给外部。
 
 ### 3. 单行子查询
 
-#### 1) 单行比较操作符
+#### 3.1 单行比较操作符
 
 | 操作符 | 含义                     |
 | ------ | ------------------------ |
@@ -1679,7 +1705,7 @@ SELECT 是先执行 FROM 这一步的。在这个阶段，如果是多张表联�
 | <=     | less than or equal to    |
 | <>     | not equal to             |
 
-#### 2) 代码示例
+#### 3.2 代码示例
 
 * 题目：返回job_id与141号员工相同，salary比143号员工多的员工姓名，job_id和工资
 
@@ -1705,22 +1731,22 @@ AND salary > (
 SELECT employee_id, manager_id, department_id
 FROM employees
 WHERE manager_id IN
-        (SELECT manager_id
-        FROM employees
-        WHERE employee_id IN (174,141))
+                    (SELECT manager_id
+                    FROM employees
+                    WHERE employee_id IN (174,141))
 AND department_id IN
-        (SELECT department_id
-        FROM employees
-        WHERE employee_id IN (174,141))
+                    (SELECT department_id
+                    FROM employees
+                    WHERE employee_id IN (174,141))
 AND employee_id NOT IN(174,141);
 
 # 实现方式二：成对比较
 SELECT employee_id, manager_id, department_id
 FROM employees
-WHERE (manager_id, department_id) IN
-        (SELECT manager_id, department_id
-        FROM employees
-        WHERE employee_id IN (141,174))
+WHERE (manager_id, department_id) IN 
+                                    (SELECT manager_id, department_id
+                                    FROM employees
+                                    WHERE employee_id IN (141,174))
 AND employee_id NOT IN (141,174);
 ```
 
@@ -1736,53 +1762,57 @@ HAVING MIN(salary) >
             WHERE department_id = 50);
 ```
 
-#### 3) CASE中的子查询
+#### 3.3 CASE中的子查询
 
 题目：显式员工的employee_id,last_name和location。其中，若员工department_id与location_id为1800 的department_id相同，则location为’Canada’，其余则为’USA’。
 
 ```mysql
-SELECT employee_id, last_name,
-    (CASE department_id
-    WHEN
-        (SELECT department_id FROM departments
-        WHERE location_id = 1800)
-    THEN 'Canada' ELSE 'USA' END) location
+SELECT employee_id, last_name, (CASE department_id
+	WHEN (
+				SELECT department_id
+				FROM departments
+				WHERE location_id = 1800)
+	THEN 'Candad'
+	ELSE 'USA'
+	END
+	) 'location'
 FROM employees;
 ```
 
-#### 4) 子查询中的空值问题
+#### 3.4 子查询中的空值问题
 
 ```mysql
 SELECT last_name, job_id
 FROM employees
 WHERE job_id =
-(SELECT job_id
-FROM employees
-WHERE last_name = 'Haas');
+                (SELECT job_id
+                FROM employees
+                WHERE last_name = 'Haas');
 ```
 
 > 子查询不返回任何行
 
-#### 5) 非法使用子查询
+#### 3.5 非法使用子查询
 
 ```mysql
 SELECT employee_id, last_name
 FROM employees
 WHERE salary =
-(SELECT MIN(salary)
-FROM employees
-GROUP BY department_id);
+                (SELECT MIN(salary)
+                FROM employees
+                GROUP BY department_id);
+# 由于进行了分组, 返回了多行数据
 ```
 
 > 多行子查询使用单行比较符
 
 ### 4. 多行子查询
 
-* 也称为集合比较子查询
-* 内查询返回多行
-* 使用多行比较操作符
+* 也称为<font color='#66ccff'>集合比较子查询</font>
+* 内查询, 返回多行
+* 使用==多行比较操作符==
 
-#### 1) 多行比较操作符
+#### 4.1 多行比较操作符
 
 | 操作符 | 含义                                                     |
 | ------ | -------------------------------------------------------- |
@@ -1791,184 +1821,217 @@ GROUP BY department_id);
 | ALL    | 需要和单行比较操作符一起使用，和子查询返回的所有值比较   |
 | SOME   | 实际上是ANY的别名，作用相同，一般常使用ANY               |
 
-#### 2) 代码示例
+#### 4.2 代码示例
 
-* 题目：返回其它job_id中比job_id为‘IT_PROG’部门任一工资低的员工的员工号、姓名、job_id 以及salary
+* 题目：返回 比任意一个`job_id='IT_PROG'`的员工工资 都低的员工的`employee_id`、`last_name`、`job_id` 以及`salary`
 
-```mysql
-SELECT employee_id, last_name, job_id, salary
-FROM employees
-WHERE job_id <> 'IT_PROG' 
-AND salary < ANY(
-	SELECT salary
-    FROM emplyees
-    WHERE job_id = 'IT_PROG'
-);
-```
+    ```mysql
+    # 单行子查询实现
+    SELECT employee_id, last_name, job_id, salary
+    FROM employees
+    WHERE salary < (
+        SELECT MAX(salary)
+        FROM employees
+        WHERE job_id = 'IT_PROG')
+    AND job_id != 'IT_PROG'
+    ORDER BY salary;
+    
+    # 多行子查询实现
+    SELECT employee_id, last_name, job_id, salary
+    FROM employees
+    WHERE job_id <> 'IT_PROG' 
+    AND salary < ANY(
+        SELECT salary
+        FROM employees
+        WHERE job_id = 'IT_PROG'
+    )
+    ORDER BY salary;
+    ```
 
 * 题目：查询平均工资最低的部门id
 
-```mysql
-#方式1：
-SELECT department_id
-FROM employees
-GROUP BY department_id
-HAVING AVG(salary) = (
-        SELECT MIN(avg_sal)
-        FROM (
+    ```mysql
+    #方式1：
+    SELECT department_id
+    FROM employees
+    GROUP BY department_id
+    HAVING AVG(salary) = (
+            SELECT MIN(avg_sal)
+            FROM (
+                SELECT AVG(salary) avg_sal
+                FROM employees
+                GROUP BY department_id
+                ) dept_avg_sal
+    );
+    ```
+
+    ```mysql
+    #方式2：
+    SELECT department_id
+    FROM employees
+    GROUP BY department_id
+    HAVING AVG(salary) <= ALL (
             SELECT AVG(salary) avg_sal
             FROM employees
             GROUP BY department_id
-            ) dept_avg_sal
-);
-```
+    );
+    ```
 
-```mysql
-#方式2：
-SELECT department_id
-FROM employees
-GROUP BY department_id
-HAVING AVG(salary) <= ALL (
-        SELECT AVG(salary) avg_sal
-        FROM employees
-        GROUP BY department_id
-);
-```
-
-#### 3) 空值问题
+####  4.3 空值问题
 
 ```mysql
 SELECT last_name
 FROM employees
 WHERE employee_id NOT IN (
-    SELECT manager_id
-    FROM employees
-    WHERE manager_id IS NOT NULL
-);
+                            SELECT manager_id
+                            FROM employees
+                            WHERE manager_id IS NOT NULL
+                            );
 ```
 
 ### 5. 相关子查询
 
-如果子查询的执行依赖于外部查询，通常情况下都是因为子查询中的表用到了外部的表，并进行了条件 关联，因此每执行一次外部查询，子查询都要重新计算一次，这样的子查询就称之为 关联子查询 。 
+如果子查询的执行依赖于外部查询，通常情况下都是因为子查询中的表用到了外部的表，并进行了条件关联，因此每执行一次外部查询，子查询都要重新计算一次，这样的子查询就称之为 <font color='#66ccff'>关联子查询</font> 。 
 
-相关子查询按照一行接一行的顺序执行，主查询的每一行都执行一次子查询。
+相关子查询按照一行接一行的顺序执行，主查询的每一行都执行一次子查询 <font color='orange'>(不相关子查询的子查询部分只需要查询一次)</font>
 
-![image-20220603154919387](MySQL基础篇.assets/image-20220603154919387.png)
+<img src="MySQL基础篇.assets/image-20220603154919387.png" alt="image-20220603154919387" style="zoom: 67%;" />
 
-![image-20220603155013864](MySQL基础篇.assets/image-20220603155013864.png)
+<img src="MySQL基础篇.assets/image-20220603155013864.png" alt="image-20220603155013864" style="zoom: 67%;" />
 
 > 说明：子查询中使用主查询中的列
 
-#### 1) 代码示例
+#### 5.1 代码示例
 
-* 题目：查询员工中工资大于本部门平均工资的员工的last_name,salary和其department_id
+* 题目：查询员工中 (工资大于本部门平均工资的员工) 的last_name, salary和其department_id
 
-```mysql
-# 方式一：使用相关子查询
-SELECT last_name, salary, department
-FROM employees e1
-WHERE salary > (
-		SELECT AVG(salary)
-    	FROM employees e2
-    	WHERE department_id = e1.department_id
-);
-# 方式二：在FROM中声明子查询
-SELECT e.last_name, e.salary, e.department_id
-FROM employees e, (
-    			SELECT department_id, AVG(salary) avg_sal
-    			FROM employees
-    			GROUP BY department_id) t_dept_avg_salary
-WHERE e.department_id = t_dept_avg_salary.department_id
-AND e.salary > t_dept_avg_salary.avg_sal;
-```
+    ```mysql
+    # 需要获取当前查询的员工的部门
+    # 方式1:使用相关子查询
+    SELECT last_name, salary, department_id
+    FROM employees e1
+    WHERE salary > (
+                    SELECT AVG(salary)
+                    FROM employees e2
+                    WHERE department_id = e1.department_id
+    );
+    ```
 
-在ORDER BY 中使用子查询：
+    > **在FROM中使用子查询**, 将查询结果作为一张表使用
 
-* 查询员工的id,salary,按照department_name 排序
+    ```mysql
+    # 方式2: 在FROM中声明子查询, 将查询的结果作为一张表使用
+    SELECT e.last_name, e.salary, e.department_id
+    FROM employees e, (
+                        SELECT department_id, AVG(salary) avg_sal
+                        FROM employees
+                        GROUP BY department_id) t_dept_avgSal
+    WHERE e.department_id = t_dept_avgSal.department_id
+    AND e.salary > t_dept_avgSal.avg_sal;
+    ```
 
-```mysql
-SELECT employee_id, salary
-FROM employees e
-ORDER BY (
-	SELECT department_name
+* 查询员工的id,salary, 按照department_name 排序
+
+    >  **在ORDER BY 中使用子查询**
+
+    ```mysql
+    SELECT employee_id, salary
+    FROM employees e
+    ORDER BY (
+    SELECT department_name
     FROM departments d
     WHERE e.department_id = d.department_id
-);
-```
+    );
+    ```
 
 * 题目：若employees表中employee_id与job_history表中employee_id相同的数目不小于2，输出这些相同 id的员工的employee_id,last_name和其job_id
 
-```mysql
-SELECT e.employee_id, last_name,e.job_id
-FROM employees e
-WHERE 2 <= (SELECT COUNT(*)
-        FROM job_history
-        WHERE employee_id = e.employee_id
-);
-```
-
-#### 2) EXISTS 与 NOT EXISTS 关键字
-
-* 关联子查询通常也会和 EXISTS操作符一起来使用，用来检查在子查询中是否存在满足条件的行。
-* 如果在子查询中不存在满足条件的行：
-  + 条件返回 FALSE
-  + 继续在子查询中查找
-* 如果在子查询中存在满足条件的行：
-  + 不在子查询中继续查找
-  + 条件返回 TRUE
-* NOT EXISTS关键字表示如果不存在某种条件，则返回TRUE，否则返回FALSE。
-
-题目：查询公司管理者的employee_id，last_name，job_id，department_id信息
-
-```mysql
-# 方式一：EXISTS
-SELECT employee_id, last_name, job_id, department_id
-FROM employees e1
-WHERE EXISTS ( SELECT *
-        FROM employees e2
-        WHERE e2.manager_id =
-        e1.employee_id
-);
-
-# 方式二：自连接
-SELECT DISTINCT e1.employee_id, e1.last_name, e1.job_id, e1.department_id
-FROM employees e1 JOIN employees e2
-ON e1.employee_id = e2.manager_id;
-
-# 方式三：IN
-SELECT employee_id, last_name, job_id, department_id
-WHERE employee_id IN (
-        SELECT DISTINCT manager_id
-        FROM employees
-);
-```
-
-题目：查询departments表中，不存在于employees表中的部门的department_id和department_name
-
-```mysql
-# 方式一：
-SELECT d.department_id, d.department_name
-FROM departments e RIGHT JOIN departments d
-ON e.department_id = d.department_id
-WHERE e.department_id IS NULL;
-
-# 方式二：
-SELECT department_id, department_name
-FROM departments d
-WHERE NOT EXISTS (
-	SELECT *
+    ```mysql
+    SELECT e.employee_id, last_name,e.job_id
     FROM employees e
-    WHERE d.department_id = e.department_id
-);
-```
+    WHERE 2 <= (SELECT COUNT(*)
+            FROM job_history
+            WHERE employee_id = e.employee_id
+    );
+    ```
+    
+    > 在SELECT中, 除了GROUD UP和LIMIT之外, 其他位置都可以声明子查询
 
-#### 3) 相关更新
+#### 5.2 EXISTS 与 NOT EXISTS 关键字
+
+1. 关联子查询通常也会和 `EXISTS`操作符一起来使用，用来检查在子查询中是否存在满足条件的行。
+
+2. `EXISTS`: 
+
+   * 如果在子查询中不存在满足条件的行：
+
+     + 条件返回 FALSE
+
+     + 继续在子查询中查找
+
+   * 如果在子查询中存在满足条件的行：
+
+     + 不在子查询中继续查找
+
+     + 条件返回 TRUE
+
+3. `NOT EXISTS`关键字表示如果不存在某种条件，则返回TRUE，否则返回FALSE。
+
+4. 使用例
+
+   1. 题目：查询公司管理者的employee_id，last_name，job_id，department_id信息
+      * 重点: 筛出管理者
+   
+    ```mysql
+    # 方式一：EXISTS
+    SELECT employee_id, last_name, job_id, department_id
+    FROM employees e1
+    WHERE EXISTS ( 
+        			SELECT *
+                   FROM employees e2
+                   WHERE e2.manager_id = e1.employee_id # 查找是否有员工的管理者是e1
+    				);
+   
+    # 方式二：自连接
+    SELECT DISTINCT e1.employee_id, e1.last_name, e1.job_id, e1.department_id
+    FROM employees e1 JOIN employees e2
+    ON e1.employee_id = e2.manager_id;
+   
+    # 方式三：多行子查询 (IN)
+    SELECT employee_id, last_name, job_id, department_id
+    WHERE employee_id IN (
+                           SELECT DISTINCT manager_id
+                           FROM employees
+                   	 	);
+    ```
+	
+   2. 题目：查询departments表中，不存在于employees表中的部门的department_id和department_name
+   
+    ```mysql
+    # 方式一：
+    SELECT d.department_id, d.department_name
+    FROM employees e RIGHT JOIN departments d
+    ON e.department_id = d.department_id
+    WHERE e.department_id IS NULL;
+   
+    # 方式二：
+    SELECT department_id, department_name
+    FROM departments d
+    WHERE NOT EXISTS (
+                        SELECT *
+                        FROM employees e
+                        WHERE d.department_id = e.department_id
+    );
+    ```
+
+#### 5.3 相关更新(改)
 
 ```mysql
 UPDATE table1 alias1
-SET column = (SELECT expression
-FROM table2 alias2
-WHERE alias1.column = alias2.column);
+SET column = (
+    			SELECT expression
+                FROM table2 alias2
+                WHERE alias1.column = alias2.column);
 ```
 
 使用相关子查询依据一个表中的数据更新另一个表的数据。
@@ -1982,18 +2045,20 @@ ADD(department_name VARCHAR2(14));
 
 # 2）
 UPDATE employees e
-SET department_name = (SELECT department_name
-FROM departments d
-WHERE e.department_id = d.department_id);
+SET department_name = (
+                        SELECT department_name
+                        FROM departments d
+                        WHERE e.department_id = d.department_id);
 ```
 
-#### 4) 相关删除
+#### 5.4 相关删除(删)
 
 ```mysql
 DELETE FROM table1 alias1
-WHERE column operator (SELECT expression
-FROM table2 alias2
-WHERE alias1.column = alias2.column);
+WHERE column operator (
+                        SELECT expression
+                        FROM table2 alias2
+                        WHERE alias1.column = alias2.column);
 ```
 
 使用相关子查询依据一个表中的数据删除另一个表的数据。
@@ -2036,7 +2101,9 @@ WHERE salary > (
 
 解答：自连接方式好！ 
 
-题目中可以使用子查询，也可以使用自连接。一般情况建议你使用自连接，因为在许多 DBMS 的处理过 程中，对于自连接的处理速度要比子查询快得多。 可以这样理解：子查询实际上是通过未知表进行查询后的条件判断，而自连接是通过已知的自身数据表 进行条件判断，因此在大部分 DBMS 中都对自连接处理进行了优化。
+题目中可以使用子查询，也可以使用自连接。==一般情况建议你使用自连接==，因为在许多 DBMS 的处理过程中，对于自连接的处理速度要比子查询快得多。 
+
+可以这样理解：子查询实际上是==通过未知表==进行查询后的条件判断，而自连接是==通过已知==的自身数据表进行条件判断，因此在大部分 DBMS 中都对==自连接处理进行了优化==。
 
 ### 7. 课后练习
 
@@ -2185,8 +2252,11 @@ WHERE d.department_id = t_dept_avg_sal.department_id;
 ```
 
 9. 查询平均工资最低的部门信息和该部门的平均工资 (相关子查询)
+   * 使用子查询, 获取一个含有各个department的department_id和平均工资的表
+   * 对这个表使用排序+分页, 获得工资最低的department
 
 ```mysql
+
 SELECT d.*, (SELECT AVG(salary) FROM employees WHERE department_id = d.department_id) avg_sal
 FROM departments d, (
 	SELECT department_id, AVG(salary) avg_sal
@@ -2201,6 +2271,7 @@ WHERE d.department_id = t_dept_avg_sal.department_id;
 10. 查询平均工资最高的job信息
 
 ```mysql
+-- 首先用子查询1, 获得所有job的平均工资, 然后使用子查询2, 获得最小的job的job_id
 SELECT *
 FROM jobs
 WHERE job_id = (
@@ -2219,6 +2290,7 @@ WHERE job_id = (
 ```
 
 11. 查询平均工资高于公司平均工资的部门有哪些？
+    * 使用子查询获得公司平均工资
 
 ```mysql
 SELECT depatment_id
@@ -2235,10 +2307,11 @@ HAVING AVG(salary) > (
 
 ```mysql
 # 方式1：自连接
+# SQL92
 SELECT DISTINCT *
 FROM employees emp, employees manager
 WHERE emp.`manager_id` = manager.`employee_id`;
-
+# SQL99
 SELECT DISTINCT *
 FROM employees emp JOIN employees manager
 ON emp.`manager_id` = manager.`employee_id`; 
@@ -2262,9 +2335,12 @@ WHERE EXISTS (
 ```
 
 13. 各个部门中，最高工资中最低的那个部门的最低工资是多少？
+    * 查询各个部门的最高工资
+    * 查询最高工资最低的部门
+    * 查询这个部门的最低工资
 
 ```mysql
-# 方式一：
+# 方式一：FROM中使用子查询, 获取一个由各部门最高工资组成的表
 SELECT MIN(salary)
 FROM employees
 WHERE department_id = (
@@ -2281,7 +2357,7 @@ WHERE department_id = (
     ) 
 );
 
-# 方式二：
+# 方式二：在比较中使用多行子查询, 得到所有的部门的最大工资
 SELECT MIN(salary)
 FROM employees
 WHERE department_id = (
@@ -2295,7 +2371,7 @@ WHERE department_id = (
     ) 
 );
 
-# 方式三：
+# 方式三：排序+分页获取最大工资
 SELECT MIN(salary)
 FROM employees
 WHERE department_id = (
@@ -2312,6 +2388,7 @@ WHERE department_id = (
 );
 
 # 方式四：
+SELECT MIN(salary)
 FROM employees e, (
 	SELECT department_id, MAX(salary) max_sal
     FROM employees
@@ -2323,6 +2400,8 @@ WHERE e.department_id = t_dept_max_sal.department_id;
 ```
 
 14. 查询平均工资最高的部门的manager的详细信息：last_name, department_id, email, salary
+    * 查询平均工资最高的部门
+    * 通过departments表, 获取manager_id
 
 ```mysql
 SELECT last_name, department_id, email, salary
@@ -2355,12 +2434,13 @@ WHERE employee_id IN (
         GROUP BY department_id
         ORDER BY avg_sal DESC
         LIMIT 0,1
-    ) t_dept_avg_sal
+    ) t_dept_avg_sal # 只存有一行数据(平均工资最高的部门)的表
     WHERE e.department_id = t_dept_avg_sal.department_id
 );
 ```
 
 15. 查询部门的部门号，其中不包括job_id是"ST_CLERK"的部门号
+    * 通过DISTINCT, 解决一对多, 返回部门中含有'ST_CLERK'job的department_id表
 
 ```mysql
 SELECT department_id
@@ -2382,6 +2462,7 @@ WHERE NOT EXISTS (
 ```
 
 16. 选择所有没有管理者的员工的last_name
+    * 非得用自连接实现啊啊啊啊啊
 
 ```mysql
 SELECT last_name
