@@ -65,48 +65,51 @@
 * IOC: 控制反转
 
 UserDao 接口
+
+```java
 public interface UserDao {
     void getUser();
 }
-1
-2
-3
+```
+
+
 UserDaoImpl 实现类
+
+```java
 public class UserDaoImpl implements UserDao {
     public void getUser() {
         System.out.println("默认获取用户数据");
     }
 }
-1
-2
-3
-4
-5
+```
+
+
 UserService 业务接口
+
+```java
 public interface UserService {
     void getUser();
 }
-1
-2
-3
+```
+
+
 UserServiceImpl 业务实现类
+
+```java
 public class UserServiceImpl implements UserService {
 
     private UserDao userDao = new UserDaoImpl();
-    
+
     public void getUser() {
         userDao.getUser();
     }
 }
-1
-2
-3
-4
-5
-6
-7
-8
+```
+
+
 测试
+
+```java
 public class MyTest {
     public static void main(String[] args) {
 
@@ -115,6 +118,9 @@ public class MyTest {
         userService.getUser();
     }
 }
+```
+
+
 1
 2
 3
@@ -2498,7 +2504,7 @@ Spring 默认的事务传播行为是 PROPAGATION_REQUIRED，它适合于绝大�
         ApplicationContext context = new ClassPathXmlApplicationContext("applicationContext.xml");
 
         UserMapper userMapper = context.getBean("userMapper", UserMapper.class);
-    
+        
         for (User user : userMapper.selectUser()) {
             System.out.println(user);
         }

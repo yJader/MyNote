@@ -1114,9 +1114,19 @@ hello world! hello git!
 ##### 1. 修改已经提交的commit信息
 
 * 有时会手误, commit信息打错, 需要修改commit信息
-
 * 修改最后一次提交的注释: `git commit --amend`, 在第一行修改注释
-  
 * 修改以前提交的注释: `git rebase -i HEAD~n`<font color='orange'>(n指倒数第n次的提交)</font>
-  
-  
+
+##### 2. warning: LF will be replaced by CRLF
+
+* 原因: 使用了坚果云便于在平板和电脑之间同步课程笔记, 但是由于不同平台换行符的差距, git add时报错`warning: LF will be replaced by CRLF`
+
+* 解决方案:
+
+  ```mysql
+  #提交时转换为LF，检出时转换为CRLF
+  $ git config --global core.autocrlf true
+  ```
+
+  自动地把回车（CR）和换行（LF）转换成换行（LF），而在检出代码时把换行（LF）转换成回车（CR）和换行（LF）
+
