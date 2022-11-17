@@ -147,10 +147,6 @@ returnType method_name(paramList) throws Exception 1,Exception2,…{…}
 
 # 自定义异常
 
-2022年6月17日
-
-15:40
-
 ### 1. 基本概念: 
 
    当程序中出现了某种"错误", 但该错误信息并没有在[Throwable](media/d208007479dc95aa008ba6a3936b9463.png)子类中描述处理. 此时可以自己设计一个异常类用于描述该错误信息
@@ -182,7 +178,8 @@ public class CustomException {
 
 	class AgeException extends RuntimeException {
         public AgeException(String message) { //构造器
-        super(message);
+            super(message);
+        }
     }
 
 }

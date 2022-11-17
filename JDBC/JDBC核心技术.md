@@ -1,11 +1,3 @@
-# JDBC核心技术
-
-讲师：宋红康
-
-微博：尚硅谷-宋红康
-
-***
-
 ## 第1章：JDBC概述
 
 ### 1.1 数据的持久化
@@ -334,7 +326,7 @@ user=root
 password=abc123
 url=jdbc:mysql://localhost:3306/test
 driverClass=com.mysql.jdbc.Driver
-# 注意:'='前后不要加空格
+ 注意:'='前后不要加空格
 ```
 
 > 说明：使用配置文件的方式保存配置信息，在代码中加载配置文件
@@ -374,7 +366,7 @@ driverClass=com.mysql.jdbc.Driver
   - **问题一：存在拼串操作，繁琐**
   - **问题二：存在SQL注入问题**
 
-- <font color='#66ccff'>SQL 注入</font>是利用某些系统没有对用户输入的数据进行充分的检查，而在用户输入数据中注入非法的 SQL 语句段或命令(如：SELECT user, password FROM user_table WHERE user='<font color='green'>a' OR 1 = '()</font> AND password = ' <font color='green'>OR '1' = '1</font>') ，从而利用系统的 SQL 引擎完成恶意行为的做法。
+- <font color='66ccff'>SQL 注入</font>是利用某些系统没有对用户输入的数据进行充分的检查，而在用户输入数据中注入非法的 SQL 语句段或命令(如：SELECT user, password FROM user_table WHERE user='<font color='green'>a' OR 1 = '()</font> AND password = ' <font color='green'>OR '1' = '1</font>') ，从而利用系统的 SQL 引擎完成恶意行为的做法。
 
 - 对于 Java 而言，要防范 SQL 注入，只要用 `PreparedStatement`(从Statement扩展而来) 取代 `Statement` 就可以了。
 
@@ -1171,10 +1163,10 @@ public void update(Connection conn ,String sql, Object... args) {
   - 授予权限
 
     ```mysql
-    #授予通过网络方式登录的tom用户，对所有库所有表的全部权限，密码设为abc123.
+    授予通过网络方式登录的tom用户，对所有库所有表的全部权限，密码设为abc123.
     grant all privileges on *.* to tom@'%'  identified by 'abc123'; 
     
-     #给tom用户使用本地命令行方式，授予atguigudb这个库下的所有表的插删改查的权限。
+     给tom用户使用本地命令行方式，授予atguigudb这个库下的所有表的插删改查的权限。
     grant select,insert,delete,update on atguigudb.* to tom@localhost identified by 'abc123'; 
     
     ```
@@ -1183,7 +1175,7 @@ public void update(Connection conn ,String sql, Object... args) {
 
 ## 第7章：DAO及相关实现类
 
-- <font color='#66ccff'>DAO(Data Access Object)</font> : 访问数据信息的类和接口，包括了对数据的CRUD（Create、Retrival、Update、Delete），而不包含任何业务相关的信息。有时也称作：BaseDAO
+- <font color='66ccff'>DAO(Data Access Object)</font> : 访问数据信息的类和接口，包括了对数据的CRUD（Create、Retrival、Update、Delete），而不包含任何业务相关的信息。有时也称作：BaseDAO
 - 作用：为了实现功能的模块化，更有利于代码的维护和升级。
 - 下面是尚硅谷JavaWeb阶段书城项目中DAO使用的体现：
 
@@ -1635,10 +1627,10 @@ public class User {
 
 ### 8.2 数据库连接池技术
 
-- 为解决传统开发中的数据库连接问题，可以采用<font color='#66ccff'>数据库连接池技术</font>。
+- 为解决传统开发中的数据库连接问题，可以采用<font color='66ccff'>数据库连接池技术</font>。
 - **数据库连接池的基本思想**：就是为数据库连接建立一个“缓冲池”。预先在缓冲池中放入一定数量的连接，当需要建立数据库连接时，只需从“缓冲池”中取出一个，使用完毕之后再放回去。
 
-- <font color='#66ccff'>数据库连接池</font>负责**分配**、**管理**和**释放**数据库连接，它**允许应用程序重复使用一个现有的数据库连接，而不是重新建立一个**。
+- <font color='66ccff'>数据库连接池</font>负责**分配**、**管理**和**释放**数据库连接，它**允许应用程序重复使用一个现有的数据库连接，而不是重新建立一个**。
 - 数据库连接池在初始化时将创建一定数量的数据库连接放到连接池中，这些数据库连接的数量是由**最小数据库连接数来设定**的。无论这些数据库连接是否被使用，连接池都将一直保证至少拥有这么多的连接数量。连接池的**最大数据库连接数量**限定了这个连接池能占有的最大连接数，当应用程序向连接池请求的连接数超过最大连接数量时，这些请求将被加入到等待队列中。
 
 ![1555593464033](media/1555593464033.png)
@@ -1674,7 +1666,7 @@ public class User {
   - `Proxool` 是sourceforge下的一个开源项目数据库连接池，有监控连接池状态的功能，**稳定性较c3p0差一点**
   - `BoneCP` 是一个开源组织提供的数据库连接池，速度快
   - `Druid` 是阿里提供的数据库连接池，据说是集DBCP 、C3P0 、Proxool 优点于一身的数据库连接池，但是速度不确定是否有BoneCP快
-- `DataSource` 通常被称为<font color='#66ccff'>数据源</font>，它包含==连接池==和==连接池管理==两个部分，习惯上也经常把 DataSource 称为<font color='#66ccff'>连接池</font>
+- `DataSource` 通常被称为<font color='66ccff'>数据源</font>，它包含==连接池==和==连接池管理==两个部分，习惯上也经常把 DataSource 称为<font color='66ccff'>连接池</font>
 - **DataSource用来取代DriverManager来获取Connection，获取速度快，同时可以大幅度提高数据库访问速度。**
 - 特别注意：
   - 数据源和数据库连接不同，数据源无需创建多个，它是产生数据库连接的工厂，因此==整个应用只需要一个数据源即可==。
@@ -1838,7 +1830,7 @@ username=root
 password=abc123
 
 initialSize=10
-#...
+...
 ```
 
 

@@ -112,11 +112,10 @@
        举例：
      
           ```mysql
-          UPDATE accounts SET money = money - 50 WHERE NAME = 'AA';
-
-          UPDATE accounts SET money = money + 50 WHERE NAME = 'BB';
+       UPDATE accounts SET money = money - 50 WHERE NAME = 'AA';
+       UPDATE accounts SET money = money + 50 WHERE NAME = 'BB';
           ```
-
+       
      * **提交（committed）**
      
        当一个处在 ==部分提交的== 状态的事务将修改过的数据都 ==同步到磁盘== 上之后，我们就可以说该事务处在了 <font color='#66ccff'>提交的(committed)</font> 状态。

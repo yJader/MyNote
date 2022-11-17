@@ -80,15 +80,13 @@ Typora 应该是被广泛用于写 Markdown 的文本软件, 就和 Markdown 语
 ### 2. 强调 [用 "**" 或 "__" 包围]
 
 ```
-**欢迎报考南京大学!** (我喜欢用这种)
-__欢迎报考南京大学!__
+**测试测试!** (我喜欢用这种)
+__测试测试!__
 ```
 
 或者选中想要强调的文字按下 `Ctrl` + `B`. 
 
-E.G. 
-
-**欢迎报考南京大学!**
+E.G. **测试测试!**
 
 ### 3. 斜体 [用 "*" 或 "_" 包围]
 
@@ -135,7 +133,7 @@ E.G.
 
 E.G. 
 
-`sudo rm -rf /*` (没事别乱敲这个! )
+`sudo rm -rf /*` 
 
 ~~"请输入管理员密码: (闪烁的光标)"~~
 
@@ -152,7 +150,7 @@ int mian() {
 ``` // (这三个"`"文本编辑器会帮你自动补全 一般不用手动输)
 ````
 
-(我之前都是用这个来展示各种语法的, 应该不用举例了吧)
+(之前都是用这个来展示各种语法的, 应该不用举例了吧)
 
 要想显示行数的话, 一般要在 Typora 的设置里勾上这个显示行数的选项. 
 
@@ -257,6 +255,7 @@ E.G.
 ```
 [来看看我贫瘠的仓库罢](https://github.com/Sakiyary)
 [基础教程: 12. 下标](#12. 下标 [用 "~" 包围])
+跳转到任意页面: 使用a标签<a name="跳到这里"/>
 ```
 
 支持网页链接与文内跳转, 按住 `Ctrl` 并 `单击鼠标左键` 即可跳转.
@@ -486,8 +485,81 @@ Markdown 在编译后约等于 HTML. 而 Typora 的正常视图就是编译后�
 
 
 
+# Latex使用
+
+### 1. 使用大括号
+
+https://blog.csdn.net/hhy_csdn/article/details/83722106
+
+1. 方法一
+
+   * ```latex
+     $$ f(x)=\left\{
+     \begin{aligned}
+     x & = & \cos(t) \\
+     y & = & \sin(t) \\
+     z & = & \frac xy
+     \end{aligned}
+     \right.
+     $$
+     ```
+
+   * $$ f(x)=\left\{
+     \begin{aligned}
+     x & = & \cos(t) \\
+     y & = & \sin(t) \\
+     z & = & \frac xy
+     \end{aligned}
+     \right.
+     $$
+
+2. 方法二
+
+   * ```latex
+     $$ F^{HLLC}=\left\{
+     \begin{array}{rcl}
+     F_L       &      & {0      <      S_L}\\
+     F^*_L     &      & {S_L \leq 0 < S_M}\\
+     F^*_R     &      & {S_M \leq 0 < S_R}\\
+     F_R       &      & {S_R \leq 0}
+     \end{array} \right. $$
+     ```
+
+   * $$ F^{HLLC}=\left\{
+     \begin{array}{rcl}
+     F_L       &      & {0      <      S_L}\\
+     F^*_L     &      & {S_L \leq 0 < S_M}\\
+     F^*_R     &      & {S_M \leq 0 < S_R}\\
+     F_R       &      & {S_R \leq 0}
+     \end{array} \right. $$
+
+3. 方法三
+
+   * ```latex
+     $$f(x)=
+     \begin{cases}
+     0& \text{x=0}\\
+     1& \text{x!=0}
+     \end{cases}$$
+     ```
+
+   * $$f(x)=
+     \begin{cases}
+     0& \text{x=0}\\
+     1& \text{x!=0}
+     \end{cases}$$
 
 
 
+### 2. 在箭头上加字
 
- 
+```latex
+箭头左边内容\stackrel{箭头文字内容}{\longrightarrow}箭头右边内容
+```
+
+ $箭头左边内容\stackrel{箭头文字内容}{\longrightarrow}箭头右边内容$
+
+### 3. 空格
+
+![在这里插入图片描述](media/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2h5c3RlcmlzaXM=,size_16,color_FFFFFF,t_70.jpeg)
+

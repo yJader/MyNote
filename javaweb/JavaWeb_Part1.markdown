@@ -1,18 +1,3 @@
----
-layout:  post
-title:   尚硅谷JavaWEB学习笔记1（自整理，自用）
-date:   1-12-07 10:01:21 发布
-author:  'zhangtao'
-header-img: 'img/post-bg-2015.jpg'
-catalog:   false
-tags:
--前端
--html
--javascript
--javaweb
-
----
-
 # 1. HTML
 
 ## 1.1 B/S软件的结构
@@ -48,7 +33,7 @@ B/S结构 Brower Server结构 浏览器-----&gt;服务器
 
 ## 1.6 HTML文件的书写规范
 
-```java
+```html
 <!DOCTYPE html><!--约束，说明-->
 <html lang="zh_CN"><!--html标签表示html的开始 lang="zh_CN"表示中午
                    html标签中一般分为两个部分，分别是head和boby
@@ -87,7 +72,7 @@ B/S结构 Brower Server结构 浏览器-----&gt;服务器
 
 **标签的语法**
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -124,9 +109,14 @@ B/S结构 Brower Server结构 浏览器-----&gt;服务器
 
 ### 1.8.1 font字体标签
 
+* `font标签`是字体标签，它可以修改文本的字体，颜色，大小（尺寸）
+  * `color属性`修改颜色
+    `face属性`修改字体
+    `size属性`修改大小
+
 **在网页上显示，我是字体标签，并修改字体为宋体，颜色为红色。**
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -136,11 +126,6 @@ B/S结构 Brower Server结构 浏览器-----&gt;服务器
 <body>
     <!--字体标签
         需求：在网页上显示，我是字体标签，并修改字体为宋体，颜色为红色
-
-        font标签时字体标签，它可以修改文本的字体，颜色，大小（尺寸）
-        color属性修改颜色
-        face属性修改字体
-        size属性修改大小
     -->
 <font color="red" face="宋体" size="7">我是字体标签</font>
 </body>
@@ -149,9 +134,16 @@ B/S结构 Brower Server结构 浏览器-----&gt;服务器
 
 ### 1.8.2 特殊字符
 
+```html
+常用的特殊字符：
+    <    &lt;
+    >    &gt;
+    空格  &nbsp;
+```
+
 **把换行标签变成文本转换成字符显示在页面上**
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -161,11 +153,6 @@ B/S结构 Brower Server结构 浏览器-----&gt;服务器
 <body>
     <!--特殊字符
     需求1：把<br>换行标签变成文本转换成字符显示在页面上
-
-    常用的特殊字符：
-        <    &lt;
-        >    &gt;
-        空格  &nbsp;
     -->
 我是<br>标签
 我是&it;br&gt;标签<br/>
@@ -180,7 +167,7 @@ B/S结构 Brower Server结构 浏览器-----&gt;服务器
 
 **显示标题1到标题6**
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -216,7 +203,7 @@ B/S结构 Brower Server结构 浏览器-----&gt;服务器
 
 **需求：普通的超链接**
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -239,15 +226,14 @@ B/S结构 Brower Server结构 浏览器-----&gt;服务器
 
 ### 1.8.5 列表标签
 
-无序列表：
-
-有序列表：
-
-定义列表：
+* `ul`是无序列表
+  * `type属性`可以修改列表项前面的符号
+  * `li标签`是列表项
+* `ol`是有序列表
 
 **需求：使用无序列表方式，把四大天王，刘德华，郭富城，黎明，张学友，展示出来**
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -283,9 +269,25 @@ B/S结构 Brower Server结构 浏览器-----&gt;服务器
 
 img标签可以在html页面上显示图片
 
-**需求：使用img标签显示一张美女的照片。并修改宽高和边框属性**
+* img标签是图片标签，用来显示图片
+  * `src属性`可以设置图片的路径
+    `width属性`可以设置图片的宽度
+    `height属性`可以设置图片的高度
+    `border属性`可以设置图片的边框大小
+    `alt属性`设置当指定路径找不到图片时，用来替代显示的==文本内容==
 
-```java
+* 在javase中路径也分为相对路径和绝对路径
+  * 相对路径：从工程名开始算
+    * `.`:  表示当前文件坐在的目录
+      `..`: 表示当前文件所在的上一级目录
+      文件名       表示当前文件所在目录的文件，相当于  ./文件名    ./可以省略
+  * 绝对路径：盘符：/目录/文件名
+    * 正确格式是：http://ip:prot/工程名/资源路径
+      错误格式是：盘符:/目录/文件名
+
+**需求：使用img标签显示一张照片。并修改宽高和边框属性**
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -296,28 +298,6 @@ img标签可以在html页面上显示图片
 
 <!--
     需求：使用img标签显示一张照片。并修改宽高和边框属性
-    
-    img标签是图片标签，用来显示图片
-        src属性可以设置图片的路径
-        width属性可以设置图片的宽度
-        height属性可以设置图片的高度
-        border属性可以设置图片的边框大小
-        alt属性设置当指定路径找不到图片时，用来替代显示的文本内容
-
-    在javase中路径也分为相对路径和绝对路径
-        相对路径：从工程名开始算
-
-        绝对路径：盘符：/目录/文件名
-
-     在web中路径分为相对路径和绝对路径两种
-        相对路径：
-            .          表示当前文件坐在的目录
-            ..         表示当前文件所在的上一级目录
-            文件名       表示当前文件所在目录的文件，相当于  ./文件名    ./可以省略
-
-        绝对路径：
-            正确格式是：http://ip:prot/工程名/资源路径
-            错误格式是：盘符:/目录/文件名
 -->
 <img src="../imgs/1.jpg" width="100" height="128" border="2" alt="图片不存在"/>
 </body>
@@ -326,9 +306,21 @@ img标签可以在html页面上显示图片
 
 ### 1.8.7 表格标签
 
+* table标签是表格标签
+* `border`   设置表格标签
+  `width`    设置表格宽度
+  `height`   设置表格高度
+  `align`    设置表格相对于页面的对齐方式(right/left/center)
+  `cellspacing` 设置单元格之间的间距
+
+* `tr`   是行标签
+  `th`   是表头标签
+  `td`   是单元格标签
+* `b`标签是加粗标签
+
 **需求1：做一个带表头的，三行，三列的表格，并显示边框**
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -374,7 +366,7 @@ img标签可以在html页面上显示图片
 
 **需求2：修改表格的宽度，高度，表格的对齐方式，单元格间距**
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -385,20 +377,6 @@ img标签可以在html页面上显示图片
 <!--
     需求1：做一个带表头的，三行，三列的表格，并显示边框
     需求2：修改表格的宽度，高度，表格的对齐方式，单元格间距
-
-        table标签是表格标签
-            border   设置表格标签
-            width    设置表格宽度
-            height   设置表格高度
-            align    设置表格相对于页面的对齐方式
-            cellspacing 设置单元格之间的间距
-
-
-        tr   是行标签
-        th   是表头标签
-        td   是单元格标签
-             align     设置单元格文本对齐方式
-        b标签是加粗标签
 -->
 <table align="center" border="1" width="300" height="300" cellspacing="0">
     <tr>
@@ -424,7 +402,9 @@ img标签可以在html页面上显示图片
 
 ### 1.8.8 跨行跨列表格
 
-```java
+* `colspan` / `rowspan`: <font color='green'>span:跨越</font>
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -479,7 +459,14 @@ img标签可以在html页面上显示图片
 
 iframe标签可以在一个html页面上，打开一个窗口，去加载一个单独的页面
 
-```java
+* iframe标签可以在页面上开辟一个小区域显示一个单独的页面
+* iframe和a标签组合使用的步骤：
+  1. 在iframe标签中使用name属性定义一个名称
+  2. 在a标签的target属性上设置iframe的name的属性值
+
+* iframe标签不是单闭合标签
+
+```html
 <!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/html">
 <head>
@@ -487,15 +474,10 @@ iframe标签可以在一个html页面上，打开一个窗口，去加载一个�
     <title>8-iframe标签</title>
 </head>
 <body>
+    
 我是一个单独完整的页面
 <br/>
-<!--
-    iframe标签可以在页面上开辟一个小区域显示一个单独的页面
-        iframe和a标签组合使用的步骤：
-            1 在iframe标签中使用name属性定义一个名称
-            2 在a标签的target属性上设置iframe的name的属性值
-        iframe标签不是单闭合标签
--->
+
 <iframe src="1-font标签.html" width="500" height="600" name="abc"></iframe>
 <br/>
     <ul>
@@ -510,13 +492,81 @@ iframe标签可以在一个html页面上，打开一个窗口，去加载一个�
 
 ### 1.8.10 表单标签
 
-什么是表单？
+1. 什么是表单？
+   * 表单html页面中，用来收集用户信息的所有元素集合，然后把这些信息发送给服务器。
 
-表单html页面中，用来收集用户信息的所有元素集合，然后把这些信息发送给服务器。
+2. `form标签`就是表单标签
+
+   * action属性设置提交的==服务器地址==
+   * method属性设置提交的方式`GET（默认值）`或`post`
+
+   * 表单提交的时候，数据没有发送给服务器的三种情况：
+
+     1. 表单项没有name属性
+
+     2. 单选 复选 下拉列表中的option标签，都要==添加value属性==，以便发给服务器
+
+     3. 表单项不在提交的form标签中
+
+        ```html
+        https://www.baidu.com/
+        ?
+        action=login
+        sex=on
+        admin=admin
+        ```
+
+   * **get请求**的特点是：
+     
+     1. 浏览器地址栏中的地址是：action属性[+?+请求参数]
+        参数格式是：name=value&name=value
+     2. 不安全
+     3. 数据长度的限制
+   * **post请求**的特点是：
+     
+     * 浏览器地址栏中只有action属性值
+     * 相对于get请求要安全
+     * 理论上没有数据长度的限制
+
+3. 框
+
+   * `input type="text"`:  是==文件输入框==
+     * 其中`name属性`必须指定, 否则数据不会发送到服务器
+   * `input type="password"`: 是==密码输入框==
+   * `input type="radio"`: 	是==单选框== 
+     * `name属性`可以对其进行分组
+   * `input type="checkbox`: 是==复选框==
+     * `checked="checked"` 表示默认选中
+   * `textarea` 表示==多行文本输入框==（起始标签和结束标签中间的内容是默认值）
+     * `rows 属性`设置可以显示几行的高度
+       `cols 属性`设置每行可以显示几个字符宽度
+
+4. 按钮
+
+   * `input type="reset"`:  	是==重置按钮==
+     * `value属性`修改按钮上的文本
+   * `input type="submit"`: 	是==提交按钮==
+     * `value属性`修改按钮上的文本
+   * `input type="button"`: 	是==按钮==
+     * `value属性`修改按钮上的文本
+
+5. 文件上传
+
+   * `input type="file"`:	是==文件上传域==
+
+6. 隐藏域
+
+   * `input type="hidden"`: 	是==隐藏域==
+     * 我们要发送某些信息，不需要用户参与，就可以使用隐藏域（提交的时候同时发给服务器）
+
+7. 下拉列表框
+
+   * `select标签`是==下拉列表框==
+   * `option标签`是下拉列表框中的选项，可以设置`selected="selected"`设置默认选中
 
 **需求：创建一个个人信息注册的表单界面。** **包含用户名，密码，确认密码。性别（单选框）** **兴趣爱好（多选框），国籍（下拉列表）。** **隐藏域，自我评价（多行文本域。重置，提交）**
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -524,32 +574,12 @@ iframe标签可以在一个html页面上，打开一个窗口，去加载一个�
     <title>Title</title>
 </head>
 <body>
-
+ 
 <!--
     需求：创建一个个人信息注册的表单界面。
     包含用户名，密码，确认密码。性别（单选框）
     兴趣爱好（多选框），国籍（下拉列表）。
     隐藏域，自我评价（多行文本域。重置，提交）
--->
-<!--
-    form标签就是表单
-    input type="text"       是文件输入框
-    input type="password"   是密码输入框
-    input type="radio"      是单选框 name属性可以对其进行分组 checked="checked"表示默认选中
-    input type="checkbox    是复选框    checked="checked" 表示默认选中
-    input type="reset"      是重置按钮  value属性修改按钮上的文本
-    input type="submit"     是提交按钮  value属性修改按钮上的文本
-    input type="button"     是按钮     value属性修改按钮上的文本
-    input type="file"       是文件上传域
-    input type="hidden"     是隐藏域    我们要发送某些信息，不需要用户参与，就可以使用隐藏域（提交的时候同时发给服务器）
-
-    select标签是下拉列表框
-        option标签是下拉列表框中的选项，可以设置selected="selected"设置默认选中
-
-    textarea 表示多行文本输入（起始标签和结束标签中间的内容是默认值）
-        rows 属性设置可以显示几行的高度
-        cols 属性设置每行可以显示几个字符宽度
-
 -->
 <form>
     用户名称：<input type="text" value="默认值"/><br/>
@@ -575,7 +605,7 @@ iframe标签可以在一个html页面上，打开一个窗口，去加载一个�
 
 居中显示
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -669,7 +699,7 @@ iframe标签可以在一个html页面上，打开一个窗口，去加载一个�
 
 **表单提交细节**
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -762,9 +792,11 @@ iframe标签可以在一个html页面上，打开一个窗口，去加载一个�
 
 ### 1.8.11 其他标签
 
-**div span p标签**
+div标签：默认独占一行
+span标签：它的长度是封装主句的长度
+p标签：段落标签  默认会在段落上方或下方各空出一行（如果已有就不再空）
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -774,9 +806,9 @@ iframe标签可以在一个html页面上，打开一个窗口，去加载一个�
 <body>
 <!--div\span\p标签-->
 <!--
-    div标签：默认独占一行
-    span标签：它的长度是封装主句的长度
-    p标签：段落标签  默认会在段落上方或下方各空出一行（如果已有就不再空）
+div标签：默认独占一行
+span标签：它的长度是封装主句的长度
+p标签：段落标签  默认会在段落上方或下方各空出一行（如果已有就不再空）
 -->
 <div>div标签1</div>
 <div>div标签2</div>
@@ -788,10 +820,11 @@ iframe标签可以在一个html页面上，打开一个窗口，去加载一个�
 </html>
 ```
 
+# 2.CSS
 
 ## 2.1 CSS语言介绍
 
-CSS是用于（增强）网页养蛇并允许将样式信息与网页内容分离的一种标记性语言。
+CSS是用于（增强）网页样式并允许将样式信息与网页内容分离的一种标记性语言。
 
 ## 2.2 CSS的语法规则
 
@@ -806,7 +839,8 @@ CSS是用于（增强）网页养蛇并允许将样式信息与网页内容分�
 
 例如：
 
-p{ 
+```css
+p{ /*表示所有的p标签都遵循以下规则*/
 <!-- -->
 
 color:red;
@@ -814,6 +848,7 @@ color:red;
 font-size:30px;
 
 }
+```
 
 一般每行只描述一个属性
 
@@ -821,13 +856,13 @@ CSS：注释：/**/
 
 ## 2.3 CSS和HTML的结合方式
 
-### 2.3.1 第一种
+### 2.3.1 第一种 嵌入样式表
 
  在标签的style属性上设置"key:value value",修改标签样式。
 
 **需求：分别定义两个div span标签，分别修改每个div标签的样式：边框1个像素，实线，红色**
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -851,20 +886,20 @@ CSS：注释：/**/
 
 3 CSS代码没有复用性
 
-### 2.3.2 第二种
+### 2.3.2 第二种 内部样式表
 
 在head标签中，使用style标签来定义各种自己需要的css样式
 
 格式如下：
 
+```html
 xxx{ 
 <!-- -->
-
  key : value value;
-
 }
+```
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -897,9 +932,9 @@ xxx{
 
  2 维护起来不方便，实际的项目中会有成千上万的页面，要到每个页面中去修改，工作量太大了。
 
-### 2.3.3 第三种
+### 2.3.3 第三种 外部样式表
 
-把css样式写成一个单独的css文件，再通过link标签引入即可复用。
+把css样式写成一个单独的css文件，再通过`link标签`引入即可复用。
 
 使用html的标签导入css样式文件
 
@@ -909,16 +944,16 @@ xxx{
 
 标签名选择器的格式是：
 
+```html
 标签名{ 
 <!-- -->
-
  属性：值；
-
 }
+```
 
 标签名选择器，可以决定哪些标签被动的使用这个样式。
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -956,14 +991,14 @@ xxx{
 
 id选择器的格式是：
 
+```html
 #id属性值{ 
 <!-- -->
-
- 属性：值
-
+ 属性：值;
 }
+```
 
-id选择器，可以让我们通过id属性选择性的去使用这个样式。
+id选择器，可以让我们通过==id属性==选择性的去使用这个样式。
 
 需求1：分别定义两个div标签。
 
@@ -971,7 +1006,7 @@ id选择器，可以让我们通过id属性选择性的去使用这个样式。
 
 第二个div标签id为id002，然后根据id属性定义css样式修改的字体颜色为红色，字体大小20个像素。边框为5像素蓝色点线。
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1003,12 +1038,12 @@ id选择器，可以让我们通过id属性选择性的去使用这个样式。
 
 class类型选择器的格式是：
 
+```html
 .class 属性值{ 
 <!-- -->
-
- 属性：值；
-
+ 属性: 值;
 }
+```
 
 class类型选择器，可以通过class属性有效的选择性的去使用这个样式。
 
@@ -1016,7 +1051,7 @@ class类型选择器，可以通过class属性有效的选择性的去使用这�
 
 需求2：修改class属性值为class02的div标签，字体颜色为灰色，字体大小26个像素。边框为1像素红实线。
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1029,13 +1064,11 @@ class类型选择器，可以通过class属性有效的选择性的去使用这�
     -->
     <style type="text/css">
         .class01{
-     
             border: 1px yellow solid;
             color: blue;
             font-size: 30px;
         }
         .class02{
-     
             color: gray;
             font-size: 26px;
             border: 1px red solid;
@@ -1053,85 +1086,156 @@ class类型选择器，可以通过class属性有效的选择性的去使用这�
 
 ### 2.4.4 组合选择器
 
-组合选择器的格式是：
+1. 包含选择器
+   * 包含选择器通过空格标识符来实现
+   
+   * 例如：
 
-选择器1，选择器2，选择器n{ 
-<!-- -->
-
- 属性：值
-
-}
-
-组合选择器可以让多个选择器公用同一个css代码
-
-```java
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>组合选择器</title>
-    <style type="text/css">
-        .class01, #id01{
-     
-            color: blue;
-            font-size: 20px;
-            border: 1px yellow solid;
+        ```html
+        <div id="header">
+        <p>文本一</p>
+        </div>
+        <div id="main">
+        <p>文本二</p>
+        </div>
+        #header p{
+        fontsize:12px;
         }
-    </style>
-</head>
-<body>
-<!--
-    需求：修改class="class01"的div标签和id="id01"所有的span标签
-    字体为蓝色，字体大小20个像素，边框为1像素黄色实线。
--->
-<div class="class01">div标签1</div>
-<div id="id01">div标签1</div>
-<span class="class01">span标签1</span>
-<span id="id01">span标签2</span>
-</body>
-</html>
-```
+        #main p{
+        fontsize:12px;
+        }
+        ```
+		即设置header和main里<p>标签像素大小为12
+
+2. 子选择器
+
+   * 子选择器是指定==父元素所包含的子元素==，子选择器使用">"表示
+
+   * 例如：
+
+     ```html
+     div>span{
+     ......
+     font-size:24px;
+     }
+     ```
+
+     即包含在div元素里的子元素span字体大小都定义为24像素。
+
+3. 相邻选择器
+
+   * 相邻选择器通过“+”分隔符定义，即两个标签==必须是规定给的顺序关系==，否则无法实现
+
+   * 例如：
+
+     ```html
+     p+h3{
+     ......
+     background-color：#0099FF；}
+     ```
+
+     即在<p>标签之后的一个<h3>标签背景设置为蓝色。
+
+4. 兄弟选择器
+
+   * 通过“~”分隔符定义，能够选择前置元素后同级的所有匹配元素
+
+   * 例如：
+
+     ```html
+     p~h3{
+     background-color:#0099FF;
+     .......}
+     
+     <h3>文本一</h3>
+     <p>文本二</p>
+     <h3>文本三</h3>
+     ```
+
+​				即<p>之后的所有h3背景色都改为蓝色。
+
+5. 分组选择器
+
+   * 分组选择器通过“，”分隔符定义，通过分组选择器可以实现==集体声明==，将一致的CSS样式放在一起。
+
+   * 例如
+
+     ```html
+     h1,h2,h3{
+     background-color:#0099FF;
+     .......}
+     ```
+
+     即将h1,h2,h3标签的背景都设置为蓝色。
+
+     ```html
+     <!DOCTYPE html>
+     <html lang="en">
+     <head>
+         <meta charset="UTF-8">
+         <title>组合选择器</title>
+         <style type="text/css">
+             .class01, #id01{
+                 color: blue;
+                 font-size: 20px;
+                 border: 1px yellow solid;
+             }
+         </style>
+     </head>
+     <body>
+     <!--
+         需求：修改class="class01"的div标签和id="id01"所有的span标签
+         字体为蓝色，字体大小20个像素，边框为1像素黄色实线。
+     -->
+     <div class="class01">div标签1</div>
+     <div id="id01">div标签1</div>
+     <span class="class01">span标签1</span>
+     <span id="id01">span标签2</span>
+     </body>
+     </html>
+     ```
+
+     
 
 ## 2.5 其他常用样式
 
-1.  字体颜色: color  
-2.  宽度 width:  
-3.  高度 height:  
-4.  背景颜色 background:  
-5.  字体样式: font-size  
-6.  div居中： margin-left:auto; matgin-right:auto;  
-7.  边框: border  
-8.  文本居中： text-align:center  
-9.  超链接去下划线： text-decoration:none  
-10.  表格细线: border: 1px black solid;/设置边框/ border-collapse: collapse;/将边框合并/  
-11.  ul无序列表去除符号: list-style: none; 
+1.  字体颜色: `color`  
+2.  宽度 `width:`  
+3.  高度 `height:`  
+4.  背景颜色 `background:`  
+5.  字体样式: `font-size`  
+6.  div居中： `margin-left:auto`; `matgin-right:auto`;  
+7.  边框: `border`  
+8.  文本居中： `text-align:center`  
+9.  超链接去下划线： `text-decoration:none`  
+10.  表格细线: 
+     * `border: 1px black solid;`设置边框
+     * `border-collapse: collapse;`将边框合并  
+11.  ul无序列表去除符号: `list-style: none;` 
 
+
+
+# 3. JavaScript
 
 ## 3.1 JavaScript介绍
 
-javaScript语言诞生主要是完成页面的数据验证，因此，它运行在客户端，需要运行浏览器来解析执行JavaScript代码。
+* javaScript语言诞生主要是完成页面的数据验证，因此，它运行在客户端，需要运行浏览器来解析执行JavaScript代码。
 
-JS是弱类型
+* JS是弱类型: 类型可变
 
-java是强类型
+  ```javascript
+  var i;
+  i=12; 数值型
+  i=‘abc’; 字符串类型
+  ```
 
-弱类型就是类型可变
+  java是强类型: 定义变量的时候，类型已确定，而且不可变 `int i = 12;`
 
-强类型就是定义变量的时候，类型已确定，而且不可变
+* JavaScript特点：
+  1. 交互性（它可以做的就是信息的动态交互）； 
+  1. 安全性（不允许直接访问本地硬盘） 
+  1. 跨平台性（只要是可以解释JS的浏览器都可以执行，和平台无关）
 
-int i = 12;
-
-var i;
-
-i=12 数值型
-
-i=‘abc’ 字符串类型
-
-特点：
-
-1. 交互性（它可以做的就是信息的动态交互）； 
-2. 安全性（不允许直接访问本地硬盘） 
-3. 跨平台性（只要是可以解释JS的浏览器都可以执行，和平台无关）
 
 ## 3.2 JavaScript和html代码的结合方式
 
@@ -1139,7 +1243,7 @@ i=‘abc’ 字符串类型
 
 JavaScript代码在页面执行的时候执行
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1158,9 +1262,9 @@ JavaScript代码在页面执行的时候执行
 
 ### 3.2.2 第二种方式
 
-使用script标签 引入，单独的JavavaScript代码文件
+使用`script标签` 引入，单独的JavavaScript代码文件
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1187,30 +1291,46 @@ JavaScript代码在页面执行的时候执行
 
 ## 3.3 变量
 
-什么是变量？
+1. 什么是变量？
+   * 变量是可以存放某些值的内存的命名
 
-变量是可以存放某些值的内存的命名
+2. javaScript的变量类型：
 
-javaScript的变量类型：
+   - <font color='#66ccff'>数值类型number</font> : JavaScript 不区分整数和小数
 
-- 数值类型 number 
-- 字符串类型 String 
-- 对象类型 object 
-- 布尔类型 boolean 
-- 函数类型 function
+   - <font color='#66ccff'>字符串类型 String</font> : JavaScript 不区分字符和字符串
 
-JavaScript里特殊的值：
+   - <font color='#66ccff'>对象类型 object</font> : 
 
-- undefined 未定义：所有js变量未赋予初值的时候，默认值都是undefined 
-- null 空值 
-- NaN 全称是Not a Number：非数字，非数值。
+   - <font color='#66ccff'>布尔类型 boolean</font> : true/false
 
-JS中的定义变量格式：
+     - JavaScript中, 其他类型和布尔类型的自动转换
 
-- var 变量名； 
-- var 变量名 = 值；
+       true: 非零的数值, 非空字符串, 非空对象
 
-```java
+       false: 零, 空字符串, null, undefined
+
+
+   - <font color='#66ccff'>函数类型 function</font>
+
+
+3. JavaScript里特殊的值：
+
+   - <font color='#66ccff'>undefined 未定义</font>：所有js变量未赋予初值的时候，默认值都是undefined 
+
+   - <font color='#66ccff'>null 空值 </font>
+
+   - <font color='#66ccff'>NaN (Not a Number)</font>：非数字，非数值。
+
+
+4. JS中的定义变量格式：
+
+   - `var 变量名；` 
+
+   - `var 变量名 = 值；`
+
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1246,7 +1366,7 @@ JS中的定义变量格式：
 
 全等于：=== 除了做字面值的比较之外还会比较两个变量的数据类型
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1279,7 +1399,7 @@ JS中的定义变量格式：
 
 0,null,undefined,""（空串）都认为是false;
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1353,11 +1473,14 @@ js中数组的定义：
 
  格式：
 
+```javascript
  var 数组名 = []; //空数组
-
  var 数组名 = [1,‘abc’,true]; //定义数组同时赋值元素
+```
 
-```java
+
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1396,18 +1519,18 @@ js中数组的定义：
 
 格式：**在js不用指明参数类型，因为js中参数类型统一为var指明了也没有用。**
 
+```javascript
 function 函数名（参数名称）{ 
 <!-- -->
-
  函数体；
-
 }
+```
 
 在javaScript语言中，如何认定带有返回值的函数？
 
 只要在函数体中直接使用return语句返回即可！
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1449,14 +1572,16 @@ function 函数名（参数名称）{
 
 **格式如下：**
 
+```javascript
 var 函数名 = function(形参列表){ 
 <!-- -->
-
  函数体；
-
 }
+```
 
-```java
+
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1494,7 +1619,7 @@ var 函数名 = function(形参列表){
 
 js不允许函数重载，函数重载会覆盖之前的函数
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1529,7 +1654,7 @@ js不允许函数重载，函数重载会覆盖之前的函数
 
 js中的隐形参数操作类似数组。
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1579,15 +1704,15 @@ js中的隐形参数操作类似数组。
 
 对象的定义：
 
- var 变量名 = new Object(); //对象实例（空对象）
-
+```javascript
+var 变量名 = new Object(); //对象实例（空对象）
  变量名.属性名=值 //定义一个属性
-
  变量名.函数名 = function(){} //定义一个函数
+```
 
 对象的访问： 变量名.属性/变量名.函数名();
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1627,7 +1752,7 @@ var 变量名 = { //空对象
 
 };
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1656,34 +1781,33 @@ var 变量名 = { //空对象
 
 ## 3.9 JS中的事件
 
-什么是事件？事件是电脑输入设备与页面进行交互的响应。
+1. 什么是事件？事件是电脑输入设备与页面进行交互的响应。
 
-**常用的事件：**
+2. **常用的事件：**
 
-- onload加载完成事件： 页面加载完之后，常用于做页面js代码初始化操作 
-- onclick单击事件： 常用于按钮的点击响应操作 
-- onblur失去焦点事件： 常用于输入框失去焦点后验证其输入内容是否合法。 
-- onchange内容发生改变事件： 常用于下拉列表和输入框内容发生改变后操作 
-- onsubmit表单提交事件： 常用于表单提交前，验证所有表单项是否合法。
+   - `onload`<font color='#66ccff'>加载完成事件</font>： 页面加载完之后，常用于做页面js代码==初始化==操作 
 
-**事件的注册又分为静态注册和动态注册两种：**
+   - `onclick`<font color='#66ccff'>单击事件</font>： 常用于按钮的==点击==响应操作 
 
-什么是事件的注册？
+   - `onblur`<font color='#66ccff'>失去焦点事件</font>： 常用于输入框失去焦点后验证其输入内容是否合法。 
 
-其实就是告诉浏览器，当事件响应后要执行哪些操作代码，叫事件注册或绑定。
+   - `onchange`<font color='#66ccff'>内容发生改变事件</font>： 常用于下拉列表和输入框内容发生改变后操作 
 
-静态注册事件：通过html标签的事件属性直接赋予事件响应后的代码，这种方式叫静态注册。
+   - `onsubmit`<font color='#66ccff'>表单提交事件</font>： 常用于表单提交前，验证所有表单项是否合法。
 
-动态注册事件：是指先通过js代码得到标签的dom对象，然后再通过dom对象.事件名=function(){}这种形式赋予事件响应后的代码，叫动态注册。
 
-动态注册的基本步骤：
+2. **事件的注册又分为静态注册和动态注册两种：**
+   1. 事件的注册: 其实就是告诉浏览器，当事件响应后要执行哪些操作代码，叫事件注册或绑定。
+   2. **静态注册事件**：通过html标签的事件属性直接赋予事件响应后的代码，这种方式叫静态注册。
+   3. **动态注册事件**：是指先通过js代码得到标签的dom对象，然后再通过dom对象.事件名=function(){}这种形式赋予事件响应后的代码，叫动态注册。
+      * 动态注册的基本步骤：
+        1. 获取标签对象 
+        1. 标签对象.事件名 = function(){}
 
-1. 获取标签对象 
-2. 标签对象.事件名 = function(){}
 
 ### onload加载完成事件
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1692,12 +1816,10 @@ var 变量名 = { //空对象
     <script type="text/javascript">
         //静态注册onload事件要调用的方法
         function fun(){
-     
             alert("静态注册onload事件");
         }
         //动态注册onload事件
         window.onload = function fun(){
-     
             alert("动态注册onload事件");
         }
     </script>
@@ -1707,10 +1829,7 @@ var 变量名 = { //空对象
 }">-->
 <!--<body οnlοad="fun()">-->
 <body>
-
 </body>
-
-
 </html>
 ```
 
@@ -1718,7 +1837,7 @@ var 变量名 = { //空对象
 
 **静态注册onclick事件**
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1739,7 +1858,7 @@ var 变量名 = { //空对象
 
 **动态注册onclick事件**
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1776,7 +1895,7 @@ var 变量名 = { //空对象
 
 **静态注册事件**
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1785,7 +1904,6 @@ var 变量名 = { //空对象
     <script type="text/javascript">
         //静态失去焦点事件事件
         function onblurFun() {
-     
             //console是控制台对象，是由于javaScript语言提供，专门用来向浏览器的控制台打印输出，用于测试使用
             //log();是打印方法
             console.log("静态失去焦点事件!");
@@ -1802,7 +1920,7 @@ var 变量名 = { //空对象
 
 **动态注册事件**
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1830,7 +1948,7 @@ var 变量名 = { //空对象
 
 ### onchange内容发生改变事件
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1878,7 +1996,7 @@ var 变量名 = { //空对象
 
 ### onsubmit事件
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1948,7 +2066,7 @@ Document对象的理解：
 
 **验证用户名是否符合规则**
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1993,7 +2111,7 @@ Document对象的理解：
 
 第一种：在输入框末尾添加提示信息
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2041,7 +2159,7 @@ Document对象的理解：
 
 第二种：使用图片代替文字
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2095,7 +2213,7 @@ Document对象的理解：
 
 **完成复选框的“全选”，“全不选”，“反选”操作**
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2163,7 +2281,7 @@ Document对象的理解：
 
 通过**标签名**查找标签dom对象，tagname是标签名
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2207,7 +2325,7 @@ Document对象的理解：
 
 ![img](https://img-blog.csdnimg.cn/6de3d43ece334622aef93cac758c951e.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5Y-R6ZmF57q_56CB5Yac,size_20,color_FFFFFF,t_70,g_se,x_16#pic_center) ![img](https://img-blog.csdnimg.cn/6497da5582b44f459364a637b7392642.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5Y-R6ZmF57q_56CB5Yac,size_20,color_FFFFFF,t_70,g_se,x_16#pic_center) ![img](https://img-blog.csdnimg.cn/fb54924e9a6b4463b6dd506db7c94da9.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5Y-R6ZmF57q_56CB5Yac,size_20,color_FFFFFF,t_70,g_se,x_16#pic_center)
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2305,7 +2423,7 @@ innerText属性，表示获取/设置起始标签和结束标签中的**文本**
 
 innerText属性和innerHTML属性的区别
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2330,25 +2448,21 @@ innerText属性和innerHTML属性的区别
 
 ## 4.1 jQuery介绍
 
-什么是jQuery？
+1. 什么是jQuery？
+   * JavaScript和查询（Query）,它是辅助JavaScript开发的js类库
 
-JavaScript和查询（Query）,它是辅助JavaScript开发的js类库
+2. jQuery核心思想：
+   * write less,do more所以实现了很多浏览器的兼容问题。
 
-jQuery核心思想：
+3. jQuery流行程度：
+   * jQuery现在已经成为最流行的JavaScript库
 
-write less,do more所以实现了很多浏览器的兼容问题。
-
-jQuery流行程度：
-
-jQuery现在已经成为最流行的JavaScript库
-
-jQuery优点：
-
-jQuery是免费 开源的，jQuery的语法设计可以使开发更加敏捷
+4. jQuery优点：
+   * jQuery是免费 开源的，jQuery的语法设计可以使开发更加敏捷
 
 ## 4.2 jQuery的第一个程序
 
-```java
+```html
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html lang="en">
 <head>
@@ -2425,7 +2539,7 @@ jQuery将程序中的“jQuery”字符替换成了“$”
 
 本质是dom对象的数组+jQuery提供的一系列功能函数
 
-```java
+```html
 <!DOCTYPE htmlPUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
@@ -2477,7 +2591,7 @@ element选择器：根据标签名查找标签对象
 
 selector1,selector2组合选择器：合并选择器1，选择器2 的结果并返回
 
-```java
+```html
 <!DOCTYPE htmlPUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
@@ -2593,7 +2707,7 @@ prev + next
 
 prev ~ siblings
 
-```java
+```html
 <!DOCTYPE htmlPUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
@@ -2720,7 +2834,7 @@ prev ~ siblings
 
 :focus
 
-```java
+```html
 <!DOCTYPE htmlPUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
@@ -2893,7 +3007,7 @@ prev ~ siblings
 
 :parent：匹配含有子元素或者文本的元素
 
-```java
+```html
 <!DOCTYPE htmlPUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
@@ -3026,7 +3140,7 @@ prev ~ siblings
 
 [atrrSel1] [attrSel2] [attrSelN] 复合属性选择器，需要同时满足多个条件时使用
 
-```java
+```html
 <!DOCTYPE htmlPUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
@@ -3202,7 +3316,7 @@ prev ~ siblings
 
 :selected： 匹配选中的option元素
 
-```java
+```html
 <!DOCTYPE htmlPUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
@@ -3385,7 +3499,7 @@ siblings(exp) 返回所有兄弟元素
 
 add() 把add匹配的选择器的元素添加到当前jQuery对象中
 
-```java
+```html
 <!DOCTYPE htmlPUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
@@ -3624,7 +3738,7 @@ val() 它可以设置和获取**表单项**的value属性值。 跟dom属性valu
 
 **属性操作实例**
 
-```java
+```html
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html lang="en">
 <head>
@@ -3664,7 +3778,7 @@ val() 它可以设置和获取**表单项**的value属性值。 跟dom属性valu
 
 **val属性的特殊用法**
 
-```java
+```html
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html lang="en">
 <head>
@@ -3721,7 +3835,7 @@ attr() 还可以操作非标准的属性。比如abc,bbj等
 
 prop() 可以设置和获取属性的值，只推荐操作checked readOnly selected diable等等
 
-```java
+```html
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html lang="en">
 <head>
@@ -3756,7 +3870,7 @@ prop() 可以设置和获取属性的值，只推荐操作checked readOnly selec
 
 ## 4.8 jQuery 练习
 
-```java
+```html
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html lang="en">
 <head>
@@ -3885,7 +3999,7 @@ remove() a.remove(); 删除所有的a标签
 
 empty() a.empty(); 清空标签a里的内容
 
-```java
+```html
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html lang="en">
 <head>
@@ -3921,7 +4035,7 @@ empty() a.empty(); 清空标签a里的内容
 
 **从左边的值到右边，从右边的值到左边**
 
-```java
+```html
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html lang="en">
 <head>
@@ -4005,7 +4119,7 @@ empty() a.empty(); 清空标签a里的内容
 
 **动态删除和添加表格记录**
 
-```java
+```html
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html lang="en">
 <head>
@@ -4141,7 +4255,7 @@ toggleClass() 有就删除，没有就添加样式。
 
 offset() 获取和设置元素的坐标。
 
-```java
+```html
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
@@ -4250,7 +4364,7 @@ fadeTo() 在指定时长内慢慢的将透明度修改到指定的值。0透明�
 
 fadeToggle() 淡入/淡出之间切换
 
-```java
+```html
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html lang="en">
 <head>
@@ -4354,7 +4468,7 @@ fadeToggle() 淡入/淡出之间切换
 
 ### 练习：CSS_动画 品牌展示
 
-```java
+```html
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html lang="en">
 <head>
@@ -4547,7 +4661,7 @@ live()：也是用来绑定事件的。它可以用来绑定选择器匹配的�
 
 unbind()：跟bind方法相反的操作，解除事件的绑定
 
-```java
+```html
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html lang="en">
 <head>
@@ -4623,7 +4737,7 @@ unbind()：跟bind方法相反的操作，解除事件的绑定
 
 在事件函数体内，return false;可以阻止事件的冒泡传递。
 
-```java
+```html
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html lang="en">
 <head>
@@ -4662,7 +4776,7 @@ unbind()：跟bind方法相反的操作，解除事件的绑定
 
 在给元素绑定事件的时候，在事件的function(event)参数列表中添加一个参数，这个参数名，我们习惯取名为event。这个event就是javaScript传递参数事件处理函数事件对象。
 
-```java
+```html
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html lang="en">
 <head>
@@ -4731,7 +4845,7 @@ unbind()：跟bind方法相反的操作，解除事件的绑定
 
 ### 4.13.5 图片跟随
 
-```java
+```html
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html lang="en">
 <head>
@@ -4787,6 +4901,8 @@ unbind()：跟bind方法相反的操作，解除事件的绑定
 ```
 
 
+# 5. XML
+
 ## 5.1 什么是XML?
 
 xml是可扩展标记语言。
@@ -4809,7 +4925,7 @@ xml的主要作用有：
 
 ### 5.3.1 文档声明
 
-```java
+```html
 <?xml version="1.0" encoding="UTF-8" ?>
 <!--
     <?xml version="1.0" encoding="UTF-8" ?>
@@ -4834,43 +4950,41 @@ xml的主要作用有：
 
 ### 5.3.2 XML注释
 
-html和xml注释一样：
+html和xml注释一样：<!-- -->
 
 ### 5.3.3 元素（标签）
 
-html标签：
+1. html标签：
 
-- 格式：&lt;标签名&gt;封装数据&lt;/标签名&gt; 
-- 单标签：&lt;标签名/&gt; &lt; br/&gt;换行 &lt; hr/&gt;水平线 
-- 双标签：&lt;标签名&gt;封装数据&lt;/标签名&gt; 
-- 标签名大小写不敏感 
-- 标签有属性，有基本属性和事件属性 
-- 标签要闭合（不闭合，html中不会报错。但我们要养成良好的书写习惯，闭合标签）
+   - 格式：&lt;标签名&gt;封装数据&lt;/标签名&gt; 
 
-**什么是xml元素？**
+   - 单标签：&lt;标签名/&gt; &lt; br/&gt;换行 &lt; hr/&gt;水平线 
 
- xml元素指的是从（且包括）开始标签直到（且包括）结束标签的部分。
+   - 双标签：&lt;标签名&gt;封装数据&lt;/标签名&gt; 
 
- 元素可包含其他元素 文本或者两者的混合物，元素也可以拥有属性。
+   - 标签名大小写不敏感 
 
-元素是指从开始标签到结束标签的内容。
+   - 标签有属性，有基本属性和事件属性 
 
-**元素命名规则**
+   - 标签要闭合（不闭合，html中不会报错。但我们要养成良好的书写习惯，闭合标签）
 
-1. 名称可以含字母 数字以及其他字符 
-2. 名称不能以数字或者标点符号开始 
-3. 名称不能以字符“xml”（或者“XML” “Xml”）开始（其实可以，只是不建议这么做） 
-4. 名称不能包含空格
 
-**xml中的元素（标签）也分为单标签和双标签：**
+2. **什么是xml元素？**
+   * xml元素指的是从（且包括）开始标签直到（且包括）结束标签的部分。
+   * 元素可包含其他元素 文本或者两者的混合物，元素也可以拥有属性。
+   * 元素是指从开始标签到结束标签的内容。
 
-单标签：
+3. **元素命名规则**
+   * 名称可以含字母 数字以及其他字符 
+   * 名称不能以数字或者标点符号开始 
+   * 名称不能以字符“xml”（或者“XML” “Xml”）开始（其实可以，只是不建议这么做） 
+   * 名称不能包含空格
 
- 格式：&lt;标签名 属性=“值” 属性=“值“…/&gt;
+4. **xml中的元素（标签）也分为单标签和双标签：**
 
-双标签：
+   * 单标签：格式：&lt;标签名 属性=“值” 属性=“值“…/&gt;
 
- 格式：&lt;标签名 属性=”值“ 属性=”值“…&gt;文本数据或子标签&lt;/标签名&gt;
+   * 双标签：格式：&lt;标签名 属性=”值“ 属性=”值“…&gt;文本数据或子标签&lt;/标签名&gt;
 
 ### 5.3.4 xml属性
 
@@ -4944,7 +5058,7 @@ Dom4j是第三方的解析技术，我们需要使用第三方给我们提供好
 
 **需要解析的xml文件**
 
-```java
+```html
 <?xml version="1.0" encoding="UTF-8"?>
 <books>
     <book sn="SN12341232">
@@ -4962,7 +5076,7 @@ Dom4j是第三方的解析技术，我们需要使用第三方给我们提供好
 
 **获取Document对象的代码**
 
-```java
+```html
 package com.company.bean;
 
 import org.dom4j.Document;
@@ -4999,7 +5113,7 @@ public class Dom4jTest{
 
 ### 5.5.4 dom4j解析xml
 
-```java
+```html
 package com.company.bean;
 
 import org.dom4j.Document;
@@ -5074,27 +5188,26 @@ public class Dom4jTest{
 ```
 
 
+
+# 6. JavaWeb
+
 ## 6.1 JavaWeb的概念
 
-### 1 什么是JavaWeb
+1. 什么是JavaWeb
 
-JavaWeb是指通过java语言编写可以通过浏览器访问的程序的总称。
+   * JavaWeb是指通过java语言编写可以通过浏览器访问的程序的总称。
 
-JavaWeb是基于请求和响应开发的。
+   * JavaWeb是基于请求和响应开发的。
 
-### 2 什么是请求？
+2. 什么是请求？
 
-请求是指客户端给服务器发送数据，叫请求request
+   * 请求是指客户端给服务器发送数据，叫<font color='#66ccff'>请求request</font>
 
-### 3 什么是响应？
+3. 什么是响应？
+   * 响应是指服务器给客户端回传数据，叫<font color='#66ccff'>响应response</font>
 
-响应是指服务器给客户端回传数据，叫响应response
-
-### 4 请求和响应的关系？
-
-成对出现
-
-有请求就有响应
+4. 请求和响应的关系？
+   * 成对出现, 有请求就有响应, 一个请求对应一个响应
 
 ## 6.2 Web资源的分类
 
@@ -5124,68 +5237,76 @@ Servlet程序从2.5版本是现在失眠使用最多的版本（xml配置）
 
 到了Servlet3.0之后就是注解版本的servlet使用
 
-## 6.5 Tomcat的使用
+## 6.5 Tomcat的基本使用
 
-### 6.5.1 安装
+1. 安装
+   * 找到需要的Tomcat版本对应的zip压缩包。解压到需要安装的目录即可
 
-找到需要的Tomcat版本对应的zip压缩包。解压到需要安装的目录即可
+2. 目录介绍
 
-### 6.5.2 目录介绍
+   - `bin` 专门用来存放Tomcat服务器的可执行程序 
 
-- bin 专门用来存放Tomcat服务器的可执行程序 
-- conf 专门用来存放Tomcat服务器的配置文件 
-- lib 专门用来存放Tomcat服务器的jar包 
-- logs 专门用来存放 Tomcat 服务器运行时输出的日志信息 
-- temp 专门用来存放 Tomcdat 运行时产生的临时数据 
-- webapps 专门用来存放部署的 Web 工程。 
-- work 是 Tomcat 工作时的目录，用来存放 Tomcat 运行时 jsp 翻译为 Servlet 的源码，和 Session 钝化的目录。
+   - `conf` 专门用来存放Tomcat服务器的配置文件 
 
-### 6.5.3 如何启动Tomcat服务器
+   - `lib` 专门用来存放Tomcat服务器的jar包 
 
-找到Tomcat目录下的bin目录下的startup.bat文件，双击，就可以启动Tomcat服务器
+   - `logs` 专门用来存放 Tomcat 服务器运行时输出的日志信息 
 
-打开浏览器，在浏览器地址栏中输入以下地址测试：
+   - `temp` 专门用来存放 Tomcdat 运行时产生的临时数据 
 
-1. http://localhost:8080 
-2. http://127.0.0.1:8080 
-3. http://真实ip地址:8080
+   - `webapps` 专门用来存放==部署的 Web 工程==。 
 
-### 6.5.4 常见的启动失败的情况
+   - `work` 是 Tomcat 工作时的目录，用来存放 Tomcat 运行时 jsp 翻译为 Servlet 的源码，和 Session 钝化的目录。
 
-双击startup.bat文件，窗口闪退
 
-这个时候，失败原因基本上都是因为没有配置好JAVA_HOME环境变量
+3. 如何启动Tomcat服务器
 
-### **6.5.5 JAVA_HOME配置失败的几种常见情况 **
+   * 找到Tomcat目录下的bin目录下的startup.bat文件，双击，就可以启动Tomcat服务器
 
-一：JAVA_HOME 必须全大写。
+   * 打开浏览器，在浏览器地址栏中输入以下地址测试：
 
-二：JAVA_HOME 中间必须是下划线，不是减号-
+     1. http://localhost:8080 
 
-三：JAVA_HOME 配置的路径只需要配置到jdk 的安装目录即可。不需要带上 bin 目录。
+     2. http://127.0.0.1:8080 
 
-### 6.5.6 另一种启动tomcat服务器的方式
+     3. http://真实ip地址:8080
 
-1. 打开命令行 
-2. cd到tomcat的bin目录下 
-3. 输入命令：catalina run
 
-### 6.5.7 Tomcat的停止
+4. 常见的启动失败的情况
+   * 双击startup.bat文件，窗口闪退
+     * 这个时候，失败原因基本上都是因为没有配置好JAVA_HOME环境变量
 
-1. 关闭tomcat窗口 
-2. 把tomcat服务器窗口置为当前窗口，然后按快捷键Ctrl+C 
-3. 找到tomcat的bin目录下的shutdown.bat文件，然后双击
+5.  **JAVA_HOME配置失败的几种常见情况 **
+   * JAVA_HOME 必须全大写。
+   * JAVA_HOME 中间必须是下划线，不是减号-
+   * JAVA_HOME 配置的路径只需要配置到jdk 的安装目录即可。不需要带上 bin 目录。
 
-### 6.5.8 如何修改tomcat的默认端口号
+6. 另一种启动tomcat服务器的方式 (命令行启动)
 
- mysql默认端口号是3306
+   1. 打开命令行 
 
- Tomcat:默认的端口号是8080
+   2. cd到tomcat的bin目录下 
 
-1. 找到Tomcat目录下的conf目录，找到server.xml配置文件。 
-2. Connector标签，修改port属性为你需要的端口号。端口号的范围为：1-65535。1000以内的多被系统占用。最好选1000以上的 
-3. 修改完端口号，一定重启Tomcat服务器才会生效 
-4. HTTP协议默认端口号是：80.
+   3. 输入命令：catalina run
+
+
+7. Tomcat的停止
+   1. 关闭tomcat窗口 
+   1. 把tomcat服务器窗口置为当前窗口，然后按快捷键Ctrl+C 
+   1. 找到tomcat的bin目录下的shutdown.bat文件，然后双击
+
+
+8. 如何修改tomcat的默认端口号
+
+   > mysql默认端口号是3306
+   >
+   > Tomcat:默认的端口号是8080
+
+   1. 找到Tomcat目录下的conf目录，找到server.xml配置文件。 
+   1. Connector标签，修改port属性为你需要的端口号。端口号的范围为：1-65535。1000以内的多被系统占用。最好选1000以上的 
+   1. 修改完端口号，一定重启Tomcat服务器才会生效 
+   1. HTTP协议默认端口号是：80.
+
 
 ## 6.6 Tomcat部署web工程
 
@@ -5207,13 +5328,16 @@ Servlet程序从2.5版本是现在失眠使用最多的版本（xml配置）
 
 ### 6.6.2 第二种方法：
 
-1.  找到tomcat下的conf目录下的\Catalina\localhost下，创建配置文件：如：abc.xml  
-2.  在abc.xml配置文件中添加以下内容 <!--
-	Context表示一个工程上下文
-	path表示工程的访问路径：/abc
-	docBase表示你的工程存放的路径
-	-->
-	<Context path="/abc" docBase="E:\book"/> 访问这个工程的路径为：http://ip:port/abc/就表示访问E:\book目录 
+1. 找到tomcat下的conf目录下的\Catalina\localhost下，创建配置文件：如：abc.xml  
+
+2. 在abc.xml配置文件中添加以下内容 
+
+   <!--
+   Context表示一个工程上下文
+   path表示工程的访问路径：/abc
+   docBase表示你的工程存放的路径
+   -->
+   <Context path="/abc" docBase="E:\book"/> 访问这个工程的路径为：http://ip:port/abc/就表示访问E:\book目录 
 
 ## 6.7 html页面用鼠标拖到浏览器和在浏览器中输入http://ip:端口号/工程名/访问的区别
 
@@ -5284,7 +5408,7 @@ file----&gt;setting----&gt;Build,Execution,Deployment-------&gt;Application Serv
 
 **实现Servlet接口**
 
-```java
+```html
 package com.company.test;
 
 import javax.servlet.*;
@@ -5342,7 +5466,7 @@ public class servletTest implements Servlet {
 
 **web.xml**
 
-```java
+```html
 <?xml version="1.0" encoding="UTF-8"?>
 <web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -5381,7 +5505,7 @@ public class servletTest implements Servlet {
 
 GET和POST请求的分发处理
 
-```java
+```html
 package com.company.test;
 
 import javax.servlet.*;
@@ -5466,7 +5590,7 @@ public class servletTest implements Servlet {
 }
 ```
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5493,7 +5617,7 @@ public class servletTest implements Servlet {
 
 **编写一个类去继承 HttpServlet 类 **
 
-```java
+```html
 package com.company.test;
 
 import javax.servlet.ServletException;
@@ -5549,7 +5673,7 @@ public class HttpServletTest extends HttpServlet {
 
 **页面**
 
-```java
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5566,7 +5690,7 @@ public class HttpServletTest extends HttpServlet {
 
 **配置HttpServlet程序访问地址**
 
-```java
+```html
 <?xml version="1.0" encoding="UTF-8"?>
 <web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -5628,7 +5752,7 @@ Servlet程序默认是第一次访问的时候创建的，ServletConfig是每个
 
 **web.xml配置信息**
 
-```java
+```html
 <?xml version="1.0" encoding="UTF-8"?>
 <web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -5666,7 +5790,7 @@ Servlet程序默认是第一次访问的时候创建的，ServletConfig是每个
 </web-app>
 ```
 
-```java
+```html
 package com.company.test;
 
 import javax.servlet.*;
@@ -5835,7 +5959,7 @@ Map put() get() remove()
     </context-param>  
 5.  像Map一样存取数据 
 
-```java
+```html
 package com.company.test; 
 /**
  * ClassName: ${NAME}
@@ -5863,7 +5987,7 @@ public class ContextServlet2 extends HttpServlet {
 }
 ```
 
-```java
+```html
 package com.company.test; /**
  * ClassName: ${NAME}
  * Description:
