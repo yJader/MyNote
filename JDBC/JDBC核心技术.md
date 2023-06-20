@@ -6,7 +6,7 @@
 
 - 持久化的主要应用是将内存中的数据存储在关系型数据库中，当然也可以存储在磁盘文件、XML数据文件中。
 
-  ![1566741430592](media/1566741430592.png) 
+  ![1566741430592](https://yj-notes.oss-cn-hangzhou.aliyuncs.com/image/1566741430592.png) 
 
 ### 1.2 Java中的数据存储技术
 
@@ -25,19 +25,19 @@
 - JDBC的目标是使Java程序员使用JDBC可以连接任何**提供了JDBC驱动程序**的数据库系统，这样就使得程序员无需对特定的数据库系统的特点有过多的了解，从而大大简化和加快了开发过程。
 - 如果没有JDBC，那么Java程序访问数据库时是这样的：
 
-<img src="media/1555575760234.png" alt="1555575760234" style="zoom:67%;" />
+<img src="https://yj-notes.oss-cn-hangzhou.aliyuncs.com/image/1555575760234.png" alt="1555575760234" style="zoom:67%;" />
 
 ***
 
 - 有了JDBC，Java程序访问数据库时是这样的：
 
-<img src="media/1555575981203.png" alt="1555575981203" style="zoom:67%;" />
+<img src="https://yj-notes.oss-cn-hangzhou.aliyuncs.com/image/1555575981203.png" alt="1555575981203" style="zoom:67%;" />
 
 ***
 
 - 总结如下：
 
-  <img src="media/1566741692804.png" alt="1566741692804" style="zoom:67%;" />
+  <img src="https://yj-notes.oss-cn-hangzhou.aliyuncs.com/image/1566741692804.png" alt="1566741692804" style="zoom:67%;" />
 
   * 使用接口, 提高可移植性。在使用不同数据库时也不需要了解底层调用代码, 只需要调用接口
 
@@ -121,24 +121,24 @@
   - MySQL的连接URL编写方式：
 
     - `jdbc:mysql://主机名称:mysql服务端口号/数据库名称?参数=值&参数=值`
-  
+
       - jdbc:mysql://localhost:3306/atguigu
-  
+
       - jdbc:mysql://localhost:3306/atguigu**?useUnicode=true&characterEncoding=utf8**
-  
+
         （如果JDBC程序与服务器端的字符集不一致，会导致乱码，那么可以通过参数指定服务器端的字符集）
-  
+
       - jdbc:mysql://localhost:3306/atguigu?user=root&password=123456
 
   - Oracle 9i的连接URL编写方式：
 
     - `jdbc:oracle:thin:@主机名称:oracle服务端口号:数据库名称`
     - jdbc:oracle:thin:@localhost:1521:atguigu
-  
+
   - SQLServer的连接URL编写方式：
-  
+
     - `jdbc:sqlserver://主机名称:sqlserver服务端口号:DatabaseName=数据库名称`
-  
+
     - jdbc:sqlserver://localhost:1433:DatabaseName=atguigu
 
 ### 2.3 要素三：用户名和密码
@@ -527,7 +527,6 @@ public class StatementTest {
 * 占位符: 在SQL语句中提前留下填充需要填充的位置, 然后使用`setObject方法`填充占位符
 
 ```java
-
 //通用的增、删、改操作（体现一：增、删、改 ； 体现二：针对于不同的表）
 public void update(String sql,Object ... args){
     Connection conn = null;
@@ -1633,7 +1632,7 @@ public class User {
 - <font color='66ccff'>数据库连接池</font>负责**分配**、**管理**和**释放**数据库连接，它**允许应用程序重复使用一个现有的数据库连接，而不是重新建立一个**。
 - 数据库连接池在初始化时将创建一定数量的数据库连接放到连接池中，这些数据库连接的数量是由**最小数据库连接数来设定**的。无论这些数据库连接是否被使用，连接池都将一直保证至少拥有这么多的连接数量。连接池的**最大数据库连接数量**限定了这个连接池能占有的最大连接数，当应用程序向连接池请求的连接数超过最大连接数量时，这些请求将被加入到等待队列中。
 
-![1555593464033](media/1555593464033.png)
+![1555593464033](https://yj-notes.oss-cn-hangzhou.aliyuncs.com/image/1555593464033.png)
 
 - **工作原理：**
 
@@ -1916,7 +1915,7 @@ filters=wall
   - 工具类：org.apache.commons.dbutils.DbUtils   
 - API包说明：
 
-![1555595163263](media/1555595163263.png)
+![1555595163263](https://yj-notes.oss-cn-hangzhou.aliyuncs.com/image/1555595163263.png)
 
 ![1555595198644](media/1555595198644.png)
 
@@ -1963,7 +1962,7 @@ filters=wall
   - **查询**
     - `public Object query(Connection conn, String sql, ResultSetHandler rsh,Object... params) throws SQLException`：执行一个查询操作，在这个查询中，对象数组中的每个元素值被用来作为查询语句的置换参数。该方法会自行处理 PreparedStatement 和 ResultSet 的创建和关闭。
     - ...... 
-  
+
 - 测试
 
 ```java

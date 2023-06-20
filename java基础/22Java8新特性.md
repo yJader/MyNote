@@ -87,12 +87,12 @@ public void test2(){
 2.格式：
 
 - `->` ：lambda 操作符 或 箭头操作符
-- `->` 左边：lambda ==形参列表== （其实就是接口中的抽象方法的形参列表）
-- `->` 右边：lambda 体（其实就是重写的抽象方法的方法体）
+- `->左边` ：lambda ==形参列表== （其实就是接口中的抽象方法的形参列表）
+- `->右边` ：lambda 体（其实就是重写的抽象方法的方法体）
 
 #### 3.2 Lamdba表达式使用（包含六种情况）
 
-**3.2.1 语法格式一：无参，有返回值**
+**3.2.1 语法格式一：无参，无返回值**
 
 ```java
 Runnable r1 = () -> {System.out.println(“hello Lamdba!”)}
@@ -109,7 +109,7 @@ Consumer<String> con = (String str) -> {System.out.println(str)}
 ```java
 Consumer<String> con = (str) -> {System.out.println(str)}
 
-* 类型推断
+// 类型推断
 ArrayList<String> list = new ArrayList<>();//类型推断，用左边推断右边
 int[] arr = {1,2,3,4};//类型推断，用左边推断右边
 ```
@@ -151,6 +151,7 @@ public class LamdbaTest {
         };
         r1.run();
         System.out.println("====================");
+        
         //使用Lambda表达式
         Runnable r2 = () -> {
             System.out.println("Hi Lamdba");
@@ -297,7 +298,7 @@ public class LamdbaTest {
 
 ### 1. 如何理解函数式接口
 
-* Java 从诞生日起就是一直倡导“一切皆对象”， 在 Java 里面面向对象 (编程是一切。但是随着 python 、 scala 等语言的兴起和新技术的挑战 Java 不得不做出调整以便支持更加广泛的技术要求，也即 java 不但可以支持 OOP 还可以支持 <font color='#66ccff'>OOF （面向函数编程）</font>
+* Java 从诞生日起就是一直倡导“一切皆对象”， 在 Java 里面面向对象 (编程是一切。但是随着 python 、 scala 等语言的兴起和新技术的挑战 Java 不得不做出调整以便支持更加广泛的技术要求，也即 java 不但可以支持 OOP 还可以支持 <font color='#66ccff'>OOF （面向函数编程）</font> 
 * 在函数式编程语言当中，函数被当做一等公民对待。在将函数作为一等公民的编程语言中， Lambda 表达式的类型是函数。但是在 Java8 中，有所不同。在Java8 中， Lambda 表达式是对象，而不是函数，它们必须依附于一类特别的对象类型 ---- **函数式接口** 。
 * 简单的说，在 Java8 中， **Lambda 表达式就是一个函数式接口的实例**。 这就是Lambda 表达式和函数式接口的关系。也就是说，只要一个对象是函数式接口的实例，那么该对象就可以用 Lambda 表达式来表示。
 * 所以以前用 **匿名实现类 表示的现在都可以用 Lambda 表达式来写**。
@@ -717,14 +718,14 @@ public void test4() {
 
 Java 8的 `Collection` 接口被扩展，提供了两个获取流的方法：
 
-- `default Stream\<E> stream()` : 返回一个顺序流
-- `default Stream\<E> parallelStream()` : 返回一个并行流
+- `default Stream<E> stream()` : 返回一个顺序流
+- `default Stream<E> parallelStream()` : 返回一个并行流
 
 **3.1.2 创建方式二：通过数组**
 
 Java 8中的 `Arrays` 的静态方法 `stream()` 可以获取数组流
 
-- 调用 `Arrays` 类的 `static\<T> Stream\<T> stream(T[] array)`: 返回一个流
+- 调用 `Arrays` 类的 `static<T> Stream<T> stream(T[] array)`: 返回一个流
 - 重载形式，能够处理对应基本类型的数组：
   - `public static IntStream stream（int[] array）`
   - `public static LongStream stream（long[] array）`
@@ -734,12 +735,12 @@ Java 8中的 `Arrays` 的静态方法 `stream()` 可以获取数组流
 
 可以调用Stream类静态方法of()，通过显示值创建一个流。可以用于接收任意数量的参数
 
-- `public static \<T>Stream\<T> of(T...values)`:返回一个流
+- `public static <T>Stream<T> of(T...values)`:返回一个流
 
 **3.1.4 创建方式四：创建无限流**
 
-- 迭代: `public static\<T> Stream\<T> iterate(final T seed, final UnaryOperator\<T> f)`
-- 生成: `public static\<T> Stream\<T> generate(Supplier\<T> s)`
+- 迭代: `public static<T> Stream<T> iterate(final T seed, final UnaryOperator<T> f)`
+- 生成: `public static<T> Stream<T> generate(Supplier<T> s)`
 
 **代码示例：**
 
@@ -850,7 +851,7 @@ public void test2(){
     //练习1：获取员工姓名长度大于3的员工的姓名。
     List<Employee> employees = EmployeeData.getEmployees();
     Stream<String> nameStream = employees.stream().map(Employee::getName);
-    nameStream.filter(name -> name.length() >3).forEach(System.out::println);
+    nameStream.filter(name -> name.length() > 3).forEach(System.out::println);
     System.out.println();
     //练习2：使用map()中间操作实现flatMap()中间操作方法
     Stream<Stream<Character>> streamStream = list.stream().map(StreamAPITest2::fromStringToStream);
@@ -1065,9 +1066,6 @@ public void test4(){
     Set<Employee> employeeSet = employees.stream().filter(e -> e.getSalary() > 6000).collect(Collectors.toSet());
     employeeSet.forEach(System.out::println);
 }
-
-
-
 ```
 
 # 六、Optional 类的使用
@@ -1301,8 +1299,3 @@ java version is 1.7
 循环十亿次反射创建对象所需的时间：293603
 ```
 
-
-作者：RealPluto
-链接：https://juejin.cn/post/6962035387787116551
-来源：稀土掘金
-著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。

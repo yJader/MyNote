@@ -1,4 +1,4 @@
-# **一**、Git概述
+# 一、Git概述
 
 * `Git`是一个免费的、开源的==分布式版本控制系统== ，可以快速高效地处理从小型到大型的各种项目 。
 * `Git`易于学习，占地面积小，性能极快 。 它具有廉价的本地库 ，方便的暂存区域和多个工作流分支等特性。 其性能优于 `Subversion`、 `CVS`、 `Perforce`和 `ClearCase`等版本控制工具。
@@ -11,7 +11,7 @@
 
 * 版本控制其实最重要的是可以记录==文件修改历史记录==，从而让用户能够查看历史版本，方便版本切换。
 
-  <img src="media\多副本版本控制例.png" alt="版本控制" style="zoom:33%;" />
+  <img src="https://yj-notes.oss-cn-hangzhou.aliyuncs.com/image/%E5%A4%9A%E5%89%AF%E6%9C%AC%E7%89%88%E6%9C%AC%E6%8E%A7%E5%88%B6%E4%BE%8B.png" alt="版本控制" style="zoom:33%;" />
 
 * 团队协作时, 如果单纯使用多副本的版本, 不同人的修改无法合并, 所以需要专业的版本控制软件
 
@@ -46,7 +46,7 @@
 
 #### 2.1 Git工作机制
 
-<img src="media\Git工作流程.jpg" alt="Git工作流程" style="zoom: 50%;" />
+<img src="https://yj-notes.oss-cn-hangzhou.aliyuncs.com/image/Git%E5%B7%A5%E4%BD%9C%E6%B5%81%E7%A8%8B.jpg" alt="Git工作流程" style="zoom: 50%;" /> 
 
 * 分为四个区域: 工作区, 暂存区, 本地库, 远程库
   * 工作区(Workspace): 本地磁盘存放代码的文件夹
@@ -133,10 +133,10 @@
    drwxr-xr-x 1 14258 197609 0 Aug  6 19:45 ./
    drwxr-xr-x 1 14258 197609 0 Aug  6 19:39 ../
    drwxr-xr-x 1 14258 197609 0 Aug  6 19:45 .git/
-   
    ```
+   
 
-   ![image-20220806195619070](media/image-20220806195619070.png)
+![image-20220806195619070](https://yj-notes.oss-cn-hangzhou.aliyuncs.com/image/image-20220806195619070.png)
 
 ### 3. 查看本地库状态
 
@@ -673,7 +673,7 @@ hello world! hello git!
 
 ### 1. 团队内协作
 
-<img src="media\团队内协作.png" alt="团队内协作" style="zoom: 50%;" />
+<img src="media\团队内协作.png" alt="团队内协作" style="zoom: 50%;" /> 
 
 ### 2. 跨团队协作
 
@@ -701,7 +701,7 @@ hello world! hello git!
 
 2. 使用例
 
-   ```mysql
+   ```shell
    14258@LAPTOP-PJGCAD1J MINGW64 /e/Work/GitSpace/gitDemo (master)
    $ git remote -v
    
@@ -712,7 +712,7 @@ hello world! hello git!
    $ git remote -v
    git-demo        https://github.com/yJader/git-demo.git (fetch)
    git-demo        https://github.com/yJader/git-demo.git (push)
-   //别名既可以推送, 又可以拉取, 所有这里出现了两个别名
+   # 别名既可以推送, 又可以拉取, 所有这里出现了两个别名
    ```
 
 #### 1.2 推送本地分支到远程库
@@ -1111,13 +1111,13 @@ hello world! hello git!
 
 # 七、一些补充
 
-##### 1. 修改已经提交的commit信息
+### 1. 修改已经提交的commit信息
 
 * 有时会手误, commit信息打错, 需要修改commit信息
 * 修改最后一次提交的注释: `git commit --amend`, 在第一行修改注释
 * 修改以前提交的注释: `git rebase -i HEAD~n`<font color='orange'>(n指倒数第n次的提交)</font>
 
-##### 2. warning: LF will be replaced by CRLF
+### 2. warning: LF will be replaced by CRLF
 
 * 原因: 使用了坚果云便于在平板和电脑之间同步课程笔记, 但是由于不同平台换行符的差距, git add时报错`warning: LF will be replaced by CRLF`
 
@@ -1130,3 +1130,10 @@ hello world! hello git!
 
   自动地把回车（CR）和换行（LF）转换成换行（LF），而在检出代码时把换行（LF）转换成回车（CR）和换行（LF）
 
+
+
+
+
+> 命令行感觉不如idea…易上手
+>
+> 不过也正常

@@ -483,7 +483,13 @@ Markdown 在编译后约等于 HTML. 而 Typora 的正常视图就是编译后�
 
 其实 Markdown 只是标记语言的最开始, 我的感受是会了 Markdown 之后对于理解 HTML 也有帮助, 对于用 $\LaTeX$ 来写论文也有帮助. 标记语言正是为了摆脱 Word 那种虽然"所见即所得", 但又过于花哨浮华, 很差的兼容性与闭源的编码的缺陷. 当你能掌握这样的"所写即所得"时, 你肯定会感受到用 Markdown 这类语言来处理文本的妙处!
 
+# 小操作
 
+# 1. 使用`<a>`标签来转跳到文本
+
+1. 在需要链接到的内容上使用`<a name="xxx">text</a>` 
+2. 正常使用链接 `[这是一个链接](#xxx)` 
+   - `#`和`xxx`中间不要有空格
 
 # Latex使用
 
@@ -557,7 +563,7 @@ https://blog.csdn.net/hhy_csdn/article/details/83722106
 箭头左边内容\stackrel{箭头文字内容}{\longrightarrow}箭头右边内容
 ```
 
- $箭头左边内容\stackrel{箭头文字内容}{\longrightarrow}箭头右边内容$
+ $箭头左边内容\stackrel{箭头文字内容}{\longrightarrow}箭头右边内容$ 
 
 ### 3. 空格
 
