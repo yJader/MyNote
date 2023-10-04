@@ -405,7 +405,7 @@
 
 # 三、Git分支操作
 
-<img src="media\Git分支操作.png" alt="Git分支操作" style="zoom:50%;" />
+<img src="https://yj-notes.oss-cn-hangzhou.aliyuncs.com/image/Git%E5%88%86%E6%94%AF%E6%93%8D%E4%BD%9C.png" alt="Git分支操作" style="zoom:50%;" />
 
 ### 1. 分支概述
 
@@ -413,7 +413,7 @@
 
    * 在版本控制过程中，同时推进多个任务，为每个任务，我们就可以创建每个任务的单独分支。使用分支意味着程序员可以把自己的工作从开发主线上分离开来，开发自己分支的时候，不会影响主线分支的运行。对于初学者而言，分支可以简单理解为副本，一个分支就是一个单独的副本。（分支底层其实也是指针的引用）
 
-     <img src="media\分支图示.png" alt="分支图示" style="zoom: 50%;" />
+     <img src="https://yj-notes.oss-cn-hangzhou.aliyuncs.com/image/%E5%88%86%E6%94%AF%E5%9B%BE%E7%A4%BA.png" alt="分支图示" style="zoom: 50%;" />
 
 2. 分支的好处
    * 同时并行推进多个功能开发, 提高工作效率
@@ -673,11 +673,11 @@ hello world! hello git!
 
 ### 1. 团队内协作
 
-<img src="media\团队内协作.png" alt="团队内协作" style="zoom: 50%;" /> 
+<img src="https://yj-notes.oss-cn-hangzhou.aliyuncs.com/image/%E5%9B%A2%E9%98%9F%E5%86%85%E5%8D%8F%E4%BD%9C.png" alt="团队内协作" style="zoom: 50%;" /> 
 
 ### 2. 跨团队协作
 
-![跨团队协作](media\跨团队协作.png)
+![跨团队协作](https://yj-notes.oss-cn-hangzhou.aliyuncs.com/image/%E8%B7%A8%E5%9B%A2%E9%98%9F%E5%8D%8F%E4%BD%9C.png)
 
 # 五、GitHub
 
@@ -738,7 +738,7 @@ hello world! hello git!
    
    ```
 
-   <img src="media\git push.png" alt="git push" style="zoom:50%;" />
+   <img src="https://yj-notes.oss-cn-hangzhou.aliyuncs.com/image/git%20push.png" alt="git push" style="zoom:50%;" />
 
 #### 1.3 拉取远程库代码到本地库
 
@@ -865,7 +865,7 @@ hello world! hello git!
   
   ```
 
-  ![image-20220807110453207](media\image-20220807110453207.png)
+  ![image-20220807110453207](https://yj-notes.oss-cn-hangzhou.aliyuncs.com/image/image-20220807110453207.png)
 
 * 在原本地库pull
 
@@ -912,35 +912,35 @@ hello world! hello git!
 
 2. 目标人的 GitHub 账号里的地址栏复制收到的链接，然后点击 Fork 将项目叉到自己的本地仓库。
 
-   ![image-20220807111946781](media\image-20220807111946781.png)
+   ![image-20220807111946781](https://yj-notes.oss-cn-hangzhou.aliyuncs.com/image/image-20220807111946781.png)
 
 3. 这时目标人就可以编辑内容
 
 4. 修改完后，按下图操作
 
-   <img src="media\9d258a5eeeaf4d7283822676a62ace7e.png" style="zoom:33%;" />
+   <img src="https://yj-notes.oss-cn-hangzhou.aliyuncs.com/image/9d258a5eeeaf4d7283822676a62ace7e.png" style="zoom:33%;" />
 
    跳出的界面如下
 
-   <img src="media\ddf1366fe20b47018c963fb5e49244fd.png" style="zoom:33%;" />
+   <img src="https://yj-notes.oss-cn-hangzhou.aliyuncs.com/image/ddf1366fe20b47018c963fb5e49244fd.png" style="zoom:33%;" />
 
     点击绿色的创建按钮，在对话框输入一些文字来标识
 
-   <img src="media\174d7987f8aa4a91bfea64bac38986c6.png" style="zoom: 33%;" />
+   <img src="https://yj-notes.oss-cn-hangzhou.aliyuncs.com/image/174d7987f8aa4a91bfea64bac38986c6.png" style="zoom: 33%;" />
 
     5）回到拥有者的仓库，刷新一下页面，就可以看到发送的请求
 
-   <img src="media\788aa38ca074485589aeefe9ee1d1209.png" style="zoom: 50%;" />
+   <img src="https://yj-notes.oss-cn-hangzhou.aliyuncs.com/image/788aa38ca074485589aeefe9ee1d1209.png" style="zoom: 50%;" />
 
     进入到聊天室(上图红框)，可以讨论代码相关内容，聊天室实时更新，不用刷新网页。
 
     下图红框可以查看修改的代码
 
-   <img src="media\eda13c8e01174b878b4065769e6d10f3.png" style="zoom: 50%;" />
+   <img src="https://yj-notes.oss-cn-hangzhou.aliyuncs.com/image/eda13c8e01174b878b4065769e6d10f3.png" style="zoom: 50%;" />
 
     确定代码无误后就可以合并代码了
 
-   <img src="media\27ea94d87f8840869b0787da1ddf5392.png" style="zoom: 50%;" />
+   <img src="https://yj-notes.oss-cn-hangzhou.aliyuncs.com/image/27ea94d87f8840869b0787da1ddf5392.png" style="zoom: 50%;" />
 
 ### 3. SSH免密登录
 
@@ -1132,8 +1132,81 @@ hello world! hello git!
 
 
 
+# 八. commit消息规范
+
+> [如何规范你的Git commit？ - 知乎 (zhihu.com)](https://zhuanlan.zhihu.com/p/182553920)
+
+#### **commit message格式**
+
+```text
+<type>(<scope>): <subject>
+```
+
+#### **type(必须)**
+
+用于说明git commit的类别，只允许使用下面的标识。
+
+`feat`：新功能（feature）。
+
+`fix/to`：修复bug，可以是QA发现的BUG，也可以是研发自己发现的BUG。
+
+- fix：产生diff并自动修复此问题。适合于一次提交直接修复问题
+- to：只产生diff不自动修复此问题。适合于多次提交。最终修复问题提交时使用fix
+
+`docs`：文档（documentation）。
+
+`style`：格式（不影响代码运行的变动）。
+
+`refactor`：重构（即不是新增功能，也不是修改bug的 代码变动）。
+
+`perf`：优化相关，比如提升性能、体验。
+
+`test`：增加测试。
+
+`chore`：构建过程或辅助工具的变动。
+
+`revert`：回滚到上一个版本。
+
+`merge`：代码合并。
+
+`sync`：同步主线或分支的Bug。
+
+#### **scope(可选)**
+
+scope用于说明 commit 影响的范围，比如数据层、控制层、视图层等等，视项目不同而不同。
+
+例如在Angular，可以是location，browser，compile，compile，rootScope， ngHref，ngClick，ngView等。如果你的修改影响了不止一个scope，你可以使用*代替。
+
+#### **subject(必须)**
+
+subject是commit目的的简短描述，不超过50个字符。
+
+建议使用中文（感觉中国人用中文描述问题能更清楚一些）。
+
+- 结尾不加句号或其他标点符号。
+- 根据以上规范git commit message将是如下的格式：
+
+```text
+fix(DAO):用户查询缺少username属性 
+feat(Controller):用户查询接口开发
+```
+
+
+
+以上就是我们梳理的git commit规范，那么我们这样规范git commit到底有哪些好处呢？
+
+- 便于程序员对提交历史进行追溯，了解发生了什么情况。
+- 一旦约束了commit message，意味着我们将慎重的进行每一次提交，不能再一股脑的把各种各样的改动都放在一个git commit里面，这样一来整个代码改动的历史也将更加清晰。
+- 格式化的commit message才可以用于自动化输出Change log。
+
 
 
 > 命令行感觉不如idea…易上手
 >
 > 不过也正常
+>
+> ------
+>
+> 2023年9月25日 13:03:29
+>
+> idea真不如命令行好用, 对着ui找半天

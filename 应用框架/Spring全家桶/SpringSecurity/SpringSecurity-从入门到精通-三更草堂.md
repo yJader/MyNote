@@ -1771,9 +1771,8 @@ public class UserDetailsServiceImpl implements UserDetailsService {
              WebUtils.renderString(response,json);
          }
      }
-     
      ```
-
+   
 2. 配置给SpringSecurity
 
    1. 先注入对应的处理器
