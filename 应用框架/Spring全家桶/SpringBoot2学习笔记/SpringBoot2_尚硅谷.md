@@ -1018,16 +1018,19 @@ public MultipartResolver multipartResolver(MultipartResolver resolver) {
 1. 引入场景依赖 [官方文档](https://docs.spring.io/spring-boot/docs/current/reference/html/using-spring-boot.html#using-boot-starter)
 2. 查看自动配置了哪些(选做)
 
-  - 自己分析，引入场景对应的自动配置一般都生效了
-  - 配置文件(`application.properties`)中`debug=true`开启自动配置报告
-    - Negative(不生效)/ Positive(生效)
+     - 自己分析，引入场景对应的自动配置一般都生效了
+
+     - 配置文件(`application.properties`)中`debug=true`开启自动配置报告
+       - Negative(不生效)/ Positive(生效)
+
 
 3. 是否需要修改
 
   - 参照文档修改配置项
 
-  	1. [官方文档](https://docs.spring.io/spring-boot/docs/current/reference/html/appendix-application-properties.html#common-application-properties)
-  	2. 自己分析 : `xxxProperties`绑定了配置文件的哪些。
+    1. [官方文档](https://docs.spring.io/spring-boot/docs/current/reference/html/appendix-application-properties.html#common-application-properties)
+
+    2. 自己分析 : `xxxProperties`绑定了配置文件的哪些。
 
   - 自定义加入或者替换组件
 
