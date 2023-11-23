@@ -1,0 +1,197 @@
+1. ```c++
+   #include <iostream>
+   using namespace std;
+   
+   int main() {
+       int a, b, n, sum = 0;
+       cin>>b>>n;
+       
+       a = b;
+       for(int i=0; i<n; i++) {
+           sum += a;
+           a = a * 10 + b;
+   //         cout<<a<<endl;
+       }
+       cout<<sum;
+   }
+   ```
+
+2. ```c++
+   #include<bits/stdc++.h>
+   using namespace std;
+   
+   int main(){
+       int n, m;
+       cin >> n>>m;
+       int min = 1,p=1;
+       int save[100050] = {0};
+       double cp[100050] = {0};
+       int a[100050] = {0}; //存储球的数量
+       
+       a[(m+1)/2] = 1;
+       for (int i = 1; i <= m;i++){
+           cp[i] = fabs(1.0*(m + 1) / 2 - i);
+       }
+       cout << (m+1) / 2<<endl;
+       for (int i = 2; i <= n;i++){
+           int mincp = 1;
+           min = 1;
+           p = 1;
+           for (int j = 1; j <= m;j++){
+               if(a[j]<a[min]){
+                   min = j;
+               }
+           }//找出最少球的篮子
+           for (int j = 1; j <= m;j++){
+               if(a[min]==a[j]){
+                   save[p] = j;
+                   p++;
+               }//如果最少球的篮子有多个，读取篮子序号并且保存；
+           }
+           for (int j = 1; j < p;j++){
+               if(cp[save[j]]<cp[save[mincp]]){
+                   mincp = j;
+               }
+           } //比较篮子的cp值，找到最小的cp值;
+   
+           a[save[mincp]]++;
+           cout << save[mincp]<<endl;
+       }
+   }
+   ```
+
+3. ```c++
+   #include <iostream>
+   using namespace std;
+   
+   int main() {
+       int n;
+       cin>>n;
+       int a[n+10];
+       a[0] = 7; a[1] = 11;
+       
+       for(int i=2; i<=n+2; i++){
+           a[i] = a[i-1] + a[i-2];
+       }
+       if(a[n] % 3 == 0) cout<<"YES";
+       else cout<<"NO";
+   }
+   
+   ```
+
+   * ↑建议重写
+
+4. ```cpp
+   #include <iostream>
+   using namespace std;
+   
+   int main() {
+       int n, m;
+       cin>>m>>n;
+       int avg, sum = 0;
+       
+       for(int i=1; i<n; i++) {
+           avg = (m - sum) / (n - i + 1);
+           
+   //         cout<<(m - sum)<<" "<<(n - i + 1)<< ' ';
+   //         cout<<"avg = "<<avg<<"sum = "<<sum<<endl;
+           if(avg > 1) sum += avg-1;
+       }
+       cout<< m - sum;
+   }
+   ```
+
+5. ```c++
+   #include <iostream>
+   using namespace std;
+   
+   int main() {
+       int n, m, t, sum=0;
+       cin>>n>>m;
+       
+       for(int i=0; i<n; i++) {
+           int max = 0;
+           for(int j=0; j<m; j++) {
+               cin>>t;
+               if(t > max ) max = t;
+           }
+           sum += max;
+       }
+       cout<<sum;
+   }
+   ```
+
+6. ```c++
+   #include <iostream>
+   using namespace std;
+   
+   int main() {
+       int n, cnt=1;
+       cin>>n;
+       
+       while(n > cnt) {
+           n -= cnt;
+           cnt++;
+       }
+       cout<<cnt;
+   }
+   ```
+
+7. ```c++
+   #include <iostream>
+   using namespace std;
+   
+   
+   int main() {
+       int n, m, cnt=0, ans=0;
+       cin>>n>>m;
+       
+       while(n!=0) {
+           
+       }
+   }
+   ```
+
+8. ```c++
+   #include <cstdlib>
+   #include <iostream>
+   
+   using namespace std;
+   
+   const double d=1e-8;
+   inline bool solve(double m, double y)
+   {
+   	if(y - (8 * m * m * m * m + 7 * m * m * m + 2 * m * m + 3 * m + 6) > 0)
+   		return true;
+   		else 
+   		return false;
+   }
+   
+   int main()
+   {
+   	int n;
+   	double l, r, m, y;
+       l = 0;
+       r = 100;
+       scanf("%lf", &y);
+       if(y < 6 || y >807020306)
+       printf("No solution!\n");
+       else
+       {
+           while(r - l > d)
+           {
+               m = (l + r) / 2;
+               if(solve(m, y))
+               l = m;
+               else
+               r = m;
+           }
+           printf("x = %.4lf\n", l);
+       }
+   	return 0;
+   }
+   
+   ```
+
+9. 
+
