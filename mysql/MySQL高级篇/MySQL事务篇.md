@@ -578,7 +578,7 @@ mysql> select * from student;
 
 <img src="MySQL事物篇.assets/image-20220708221639979.png" alt="image-20220708221639979" style="float:left;" />
 
-MySQL的默认隔离级别为`REPEATABLE READ(可重复度)`，我们可以手动修改一下事务的隔离级别。
+MySQL的默认隔离级别为`REPEATABLE READ(可重复读)`，我们可以手动修改一下事务的隔离级别。
 
 ##### 查看隔离级别
 
