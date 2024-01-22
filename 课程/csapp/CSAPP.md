@@ -46,117 +46,215 @@
 
    - 这里的**程序员**，既可以是用汇编代码写程序的人，也可以是产生机器级代码的编译器。
 
-2. 可见状态
 
-   包括：
+##### 可见状态
 
-   - RF: 程序寄存器
-   - CC: 条件码
-   - Stat: 程序状态。状态码指明程序是否运行正常或发生某个特殊事件。
-   - DMEM: 内存
-   - PC: 程序计数器
+> Y86和X86的可见状态类似
+
+<img src="./CSAPP.assets/image-20240103195552034.png" alt="image-20240103195552034" style="zoom:50%;" /> 
+
+包括：
+
+1. RF: 程序寄存器
+   - 省略`%r15`, 简化指令编码 (用`F`来表示不需要寄存器参与)
+2. CC: 条件码
+   - `ZF`: zore flag, 整数运算结果为0
+   - `SF`: signal flag
+   - `OF`: overflow flag
+3. Stat: 程序状态。状态码指明程序是否运行正常或发生某个特殊事件。
+4. DMEM: 内存
+5. PC: 程序计数器
+
+#### 4.1.2 Y86-64指令
+
+> q: quadword, 四字, 8字节
+
+1. `movq`: 
+   - `irmovq`, `rrmovq`, `mrmovq`, `rmmovq`, 显式表明源和目的格式(`i`: 立即数, `r`: 寄存器. `m`: 内存)
+   - 其中内存引用是简单的基址(`rX`)和偏移量(`D`)组成的基址寻址
+     - 无变址寻址, 相对寻址
+2. 整数操作指令`OPq`: 
+   - `addq`, `subq`, `andq`, `xorq`
+     - `subq rA, rB`: rB-rA
+   - 只对寄存器操作
+   - 会针对计算结果设置条件码
+3. 跳转指令`jXX`
+   - `jmp`, `jle`, `jl`, `je`, `jne`, `jge`, `jg`
+4. 条件传送指令`cmovXX`
+   - `cmovle`, `cmovl`, `cmove`, `cmovne`, `cmovge`, `cmovg`
+5. `call`
+6. `pushq`和`popq`
+7. `halt`: 暂停处理器, 将状态码设置为HLT
+
+![img](https://kiprey.github.io/2020/07/csapp/chapters4_y86_isa.png)
 
 #### 4.1.3 指令编码
 
-- 每条指令需要1~10个字节不等。其中
+1. 每条指令需要1~10个字节不等。
 
-- 每条指令的第一个字节表明指示的类型。其中高4位是*代码*(code)部分，低4位是*功能*(function)部分。
+2. 每条指令的第一个字节表明指示的类型。其中高4位是**代码**(code)部分，低4位是**功能**(function)部分。
 
   > 功能值只有在一组相关指令共用一个代码时才有用。
 
-  以下是部分指令的具体字节编码
+  - 以下是部分指令的具体字节编码
 
-  ```
-  COPY注：方括号中的数据，是指令第一个字节的十六进制表示
-  
-  整数操作指令    分支指令                    传送指令
-  addq [60]     jmp [70]  jne [74]    rrmovq [20] cmovne [24]
-  subq [61]     jle [71]  jge [75]    cmovle [21] cmovge [25]
-  andq [62]     jl  [72]  jg  [76]    cmovl  [22] cmovg  [26]
-  xorq [63]     je  [73]              cmove  [23]
-  ```
+    <img src="./CSAPP.assets/image-20240103203326388.png" alt="image-20240103203326388" style="zoom: 67%;" /> 
 
-  以上面的例子为例，`rrmovq`指令与条件传送有同样的指令代码，可以把它看作是一个“无条件传送”。
+  - 以上面的例子为例，`rrmovq`指令与条件传送`cmovXX`有同样的指令代码，可以把它看作是一个“无条件传送”。
 
-- 指令的长度与指令功能相关，有些需要操作数的指令编码就更长一点。
+3. 指令的长度与指令功能相关，有些需要**操作数**的指令编码就更长一点。
 
-  - 可能有附加的*寄存器指示符字节*(register specifier byte)，用于指定1~2个寄存器。
+  - 可能有附加的**寄存器指示符字节**(register specifier byte)，用于指定1~2个寄存器
+    <img src="./CSAPP.assets/image-20240103203456186.png" alt="image-20240103203456186" style="zoom:50%;" />
 
-  - 有些指令需要一个附加的
+  - 有些指令需要一个附加的**常数字**(constant word)。这个立即数成为指令的某个操作数
 
-    常数 字
+    - 这个数字用小端编码
+    - 例如`irmovq $1, %r9`: `30 f9 01 00 00 00 00 00 00 00` 
+      
 
-    (constant word)。这个立即数成为指令的某个操作数.
+### 4.2 逻辑设计和HCL
 
-    > 例如`irmovq $1, %rax`。
-    > ![img](https://kiprey.github.io/2020/07/csapp/chapters4_y86_isa.png)
+### 4.3 Y86-64的顺序实现
 
-### 3) 异常
+#### 4.3.1 将处理组织成阶段
 
-- 在现代处理器中，当某些代码发生了某种类型的
+1. 五个阶段的简略描述
 
-  异常
+   - **取指**（fetch）：取指阶段从内存读取指令字节，地址为程序计数器（PC)的值。
+     - 从指令中抽取出指令指示符字节的两个四位部分，称为`icode`（指令代码）和`ifun`（指令功能）。
+     - 可能取出一个寄存器指示符字节，指明一个或两个寄存器操作数指示符`rA`和`rB`。
+     - 还可能取出一个四字节常数字valC。它按顺序方式计算当前指令的下一条指令的地址`valP`(valP=PC+取出指令的长度)
+   - **译码**（decode）：译码阶段从寄存器文件读入最多两个操作数，得到值`valA`和or或`valB`。通常，它读入指令`rA`和`rB`字段指明的寄存器，不过有些指令是读寄存器`%rsp`的。
+   - **执行**（execute）：在执行阶段，算术/逻辑单元(ALU)要么执行指令指明的操作（根据ifun的值），**计算**内存引用的有效地址，要么增加或减少栈指针。得到的值我们称为`valE`。
+     - 在此，也可能设置条件码`CC`。
+     - 对一条**条件传送指令**来说，这个阶段会检验条件码和传送条件（由ifun给出），如果条件成立，则更新目标寄存器。
+     - 同样，对一条**跳转指令**来说，这个阶段会决定是不是应该选择分支。
+   - **访存**（memory）：访存阶段可以将数据写入内存，或者从内存读出数据。读出的值为`valM`。
+   - **写回**（writeback）：写回阶段最多可以写两个结果到寄存器文件。
+   - **更新PC**（PCupdate）：将PC设置成下一条指令的地址。
 
-  (exception)，此时处理器会执行异常处理程序。如果程序员没有手动设置异常处理程序，则CPU会执行默认的处理程序。
+2. <a name="图4-18">图4-18</a> Y86-64指令`OPq`、`rrmovq`和`irmovq`在顺序实现中的计算。这些指令计算了一个值，并将结果存放在寄存器
 
-  > 大多数情况下默认的处理程序只会简单的关闭程序。
+   - | 阶段       | OPq rA, rB                                                   | rrmovq rA, rB                                                | irmovq V, rB                                                 |
+     | ---------- | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+     | **取指**   | icode:ifun ← M~1~[PC]<br />rA:rB ← M~1~[PC+1]<br /><br />valP ← PC+2 | icode:ifun ← M~1~[PC]<br />rA:rB ← M~1~[PC+1]<br /><br />valP ← PC+2 | icode:ifun ← M~1~[PC]<br />rA:rB ← M~1~[PC+1]<br />valC ← M~8~[PC+2]<br />valP ← PC+10 |
+     | **译码**   | valA ← R[rA]<br />valB ← R[rB]                               | valA ← R[rA] (只需要rA的数据)<br />                          |                                                              |
+     | **执行**   | valE ← **valB OP valA**<br />**set CC**                      | valE ← 0 + valA                                              | valE ← 0+valC                                                |
+     | **访存**   |                                                              |                                                              |                                                              |
+     | **写回**   | R[rB] ← valE                                                 |                                                              | R[rB] ← valE                                                 |
+     | **更新PC** | PC ← valP                                                    | PC ← valP                                                    | PC ← valP                                                    |
 
-### 4) SEQ阶段
+     - M~n~[x]:访问x位置n个字节的数据
+
+3.  <a name="图4-19">图4-19</a> Y86-64指令rmmovq和mrmovq在顺序实现中的计算。这些指令读或者写内存
+
+   - | 阶段       | rmmovq rA, D(rB)                                             | mrmovq V, rB                                                 |
+     | ---------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+     | **取指**   | icode:ifun ← M~1~[PC]<br />rA:rB ← M~1~[PC+1]<br />valC ← M~8~[PC+2]<br />valP ← PC+10 | icode:ifun ← M~1~[PC]<br />rA:rB ← M~1~[PC+1]<br />valC ← M~8~[PC+2]<br />valP ← PC+10 |
+     | **译码**   | valA ← R[rA]<br />valB ← R[rB]                               | <br />valB ← R[rB]                                           |
+     | **执行**   | valE ← valB + valC                                           | valE ← valB + valC                                           |
+     | **访存**   | **M~8~[valE] ← valA**                                        | **valM ← M~8~[valE]**                                        |
+     | **写回**   |                                                              | <br />**R[rA] ← valM**                                       |
+     | **更新PC** | PC ← valP                                                    | PC ← valP                                                    |
+
+4. <a name="图4-20">图4-20</a> Y86-64指令pushq和popq在顺序实现中的计算。这些指令将值压入或弹出栈
+
+   - | 阶段       | pushq rA                                                     | popq rA                                                      |
+     | ---------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+     | **取指**   | icode:ifun ← M~1~[PC]<br />rA:rB ← M~1~[PC+1]<br /><br />valP ← PC+2 | icode:ifun ← M~1~[PC]<br />rA:rB ← M~1~[PC+1]<br /><br />valP ← PC+2 |
+     | **译码**   | valA ← R[rA]<br />**valB ← R[%rsp]**                         | **valA ← R[%rsp]**<br />**valB ← R[%rsp]**                   |
+     | **执行**   | valE ← valB + (-8)                                           | valE ← valB + 8                                              |
+     | **访存**   | **M~8~[valE] ← valA**                                        | **valM ← M~8~[valA]**                                        |
+     | **写回**   | **R[%rsp] ← valE**<br />                                     | **R[%rsp] ← valE**<br />R[rA] ← valM                         |
+     | **更新PC** | PC ← valP                                                    | PC ← valP                                                    |
+
+5. <a name="图4-21">图4-21</a> Y86-64指令`jXX`、`call`和`ret`在顺序实现中的计算。这些指令会导致控制转移
+
+   - | 阶段       | jXX Dest                                                     | call Dest                                                    | ret                                                |
+     | ---------- | ------------------------------------------------------------ | ------------------------------------------------------------ | -------------------------------------------------- |
+     | **取指**   | icode:ifun ← M~1~[PC]<br /><br />valC ← M~8~[PC+1]<br />valP ← PC+9 | icode:ifun ← M~1~[PC]<br /><br />valC ← M~8~[PC+1]<br />valP ← PC+9 | icode:ifun ← M~1~[PC]<br /><br /><br />valP ← PC+1 |
+     | **译码**   |                                                              | <br />**valB ← R[%rsp]**                                     | **valA ← R[%rsp]**<br />**valB ← R[%rsp]**         |
+     | **执行**   | <br />Cnd ← Cond(CC, ifun)                                   | valE ← valB + (-8)<br />                                     | valE ← valB + 8<br />                              |
+     | **访存**   |                                                              | M~8~[valE] ← valP (存栈帧)                                   | valM ← M~8~[valA] (读返回位置)                     |
+     | **写回**   |                                                              | R[%rsp] ← valE (更新rsp)                                     | R[%rsp] ← valE (更新rsp)                           |
+     | **更新PC** | **PC ← Cnd ? valC : valP**                                   | **PC ← valC**                                                | **PC ← valM**                                      |
+
+##### Archlab PartB 实现iaddq
+
+> ![image-20240104122150081](./CSAPP.assets/image-20240104122150081.png)
+
+1. 描述指令实现的计算(参考OPq和irmovq)
+
+   - | 阶段       | OPq rA, rB                                                   | irmovq V, rB                                                 | ==iaddq V, rB==                                              |
+     | ---------- | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+     | **取指**   | icode:ifun ← M~1~[PC]<br />rA:rB ← M~1~[PC+1]<br /><br />valP ← PC+2 | icode:ifun ← M~1~[PC]<br />rA:rB ← M~1~[PC+1]<br />valC ← M~8~[PC+2]<br />valP ← PC+10 | icode:ifun ← M~1~[PC]<br />rA:rB ← M~1~[PC+1]<br />valC ← M~8~[PC+2]<br />valP ← PC+10 |
+     | **译码**   | valA ← R[rA]<br />valB ← R[rB]                               |                                                              | <br />valB ← R[rB]                                           |
+     | **执行**   | valE ← **valB OP valA**<br />**set CC**                      | valE ← 0+valC                                                | valE ← **valB OP valC**<br />**set CC**                      |
+     | **访存**   |                                                              |                                                              |                                                              |
+     | **写回**   | R[rB] ← valE                                                 | R[rB] ← valE                                                 | R[rB] ← valE                                                 |
+     | **更新PC** | PC ← valP                                                    | PC ← valP                                                    | PC ← valP                                                    |
+
+2. 修改iaddq指令的控制逻辑快的HCL描述
+
+#### 4.3.4 SEQ阶段的实现
 
 ![img](https://kiprey.github.io/2020/07/csapp/chapters4_y86_graph.png)
 
 > 详细细节请翻阅CSAPP第三版第277页，这里只是简单概述
 
-- 取指阶段
+##### ①取指阶段
 
-  - 以PC作为第一个字节的地址，指令内存硬件单元会一次从内存中读出10个字节。并将第一个字节分割成两个4位的数，用于计算指令和功能码。
+- 以PC作为第一个字节的地址，指令内存硬件单元会一次从内存中读出10个字节。并将第一个字节分割成两个4位的数，用于计算指令和功能码。
 
-  - PC增加硬件单元会根据当前PC以及CPU内的信号来生成下一条指令的PC。
+- PC增加硬件单元会根据当前PC以及CPU内的信号来生成下一条指令的PC。
 
-    
+  
 
-    newPC=oldPC+1+r+8i�����=�����+1+�+8�
+  newPC=oldPC+1+r+8i�����=�����+1+�+8�
 
-    （
+  （
 
-    
+  
 
-    r�
+  r�
 
-    为当前指令是否需要寄存器指示字节，
+  为当前指令是否需要寄存器指示字节，
 
-    
+  
 
-    i�
+  i�
 
-    为需要的常数字节数）
+  为需要的常数字节数）
 
-    > 注意，此时只是计算，还没有设置下一条的PC
-    > ![img](https://kiprey.github.io/2020/07/csapp/chapters4_y86_fetch.png)
+  > 注意，此时只是计算，还没有设置下一条的PC
+  > ![img](https://kiprey.github.io/2020/07/csapp/chapters4_y86_fetch.png)
 
-- 译码和写回阶段
+##### ②译码和写回阶段
 
-  - 寄存器文件有两个读端口A和B，从这两个端口同时读取寄存器值valA和valB
-    ![img](https://kiprey.github.io/2020/07/csapp/chapters4_y86_translate.png)
+> 译码: 将指令码中的rA
 
-- 执行阶段
+- 寄存器文件有两个读端口A和B，从这两个端口同时读取寄存器值valA和valB
+  ![img](https://kiprey.github.io/2020/07/csapp/chapters4_y86_translate.png)
 
-  - 执行阶段包括ALU，该单元更具`alufun`信号的设置，对输入的`aluA`、`aluB`执行特定操作。
-  - 指令阶段还包括条件码寄存器。每次运行时，ALU都会产生三个与条件码相关的信号——零、符号、溢出。
-  - 标号为`cond`的硬件单元会根据条件码和功能码来确定是否进行条件分支或条件数据传送。
-    ![img](https://kiprey.github.io/2020/07/csapp/chapters4_y86_exec.png)
+##### ③执行阶段
 
-- 访存阶段
+- 执行阶段包括ALU，该单元更具`alufun`信号的设置，对输入的`aluA`、`aluB`执行特定操作。
+- 指令阶段还包括条件码寄存器。每次运行时，ALU都会产生三个与条件码相关的信号——零、符号、溢出。
+- 标号为`cond`的硬件单元会根据条件码和功能码来确定是否进行条件分支或条件数据传送。
+  ![img](https://kiprey.github.io/2020/07/csapp/chapters4_y86_exec.png)
 
-  - 该阶段的任务为读写程序数据。读写的对象除了主存以外，还包括寄存器文件
-    ![img](https://kiprey.github.io/2020/07/csapp/chapters4_y86_visitM.png)
+##### ④访存阶段
 
-- 更新PC阶段
+- 该阶段的任务为读写程序数据。读写的对象除了主存以外，还包括寄存器文件
+  ![img](https://kiprey.github.io/2020/07/csapp/chapters4_y86_visitM.png)
 
-  - 根据指令的类型以及是否选择分支来设置新的PC。如果没有跳转，则使用取指阶段计算出的新PC值。
-    ![img](https://kiprey.github.io/2020/07/csapp/chapters4_y86_updatePC.png)
+##### ⑤更新PC阶段
 
-### 5) 流水线
+- 根据指令的类型以及是否选择分支来设置新的PC。如果没有跳转，则使用取指阶段计算出的新PC值。
+  ![img](https://kiprey.github.io/2020/07/csapp/chapters4_y86_updatePC.png)
+
+### 4.4 流水线
 
 #### a. 流水线冒险
 
@@ -176,6 +274,73 @@
     ![img](https://kiprey.github.io/2020/07/csapp/chapters4_pipelin_forward.png)
 
 - 为了提高CPU的运行速度，应尽量避免流水线冒险
+
+
+
+
+## 第5章 优化程序性能
+
+1. 使用局部变量减少重复计算
+
+   - 在二维数组中, 减少行坐标的乘法运算
+
+   - 对于strlen函数(复杂度O(n)), 只需要运行一次, 将结果暂存
+
+     ```c
+     void lower(char *s)
+     {
+     	size_t i;
+     	for (int i=0; i<strlen(s); i++) { // n次调用strlen(s), 复杂度变为O(n^2)
+             if(s[i]>='A' && s[i]<='Z') s[i]-=('A'-'a');
+         }
+     }
+     ```
+
+     - 因为strlen和lower是分开编译, 最后再链接的, 编译器无法自动进行优化
+
+2. 减少内存反复读写
+
+   - ```c
+     // 将a[i]行之和保存到b[i]中
+     void sum_rows1(double *a, double *b, long n)
+     {
+         long i, j;
+         for (i = 0; i < n; i++)
+         {
+             b[i] = 0;
+             for (j = 0; j < n; j++)
+                 b[i] += a[i * n + j];
+         }
+     }
+     ```
+
+     ```assembly
+     # sum_rows1内层循环
+     .L4:
+     	movsd (%rsi,%rax,8), %xmm0	# FP load
+     	addsd (%rdi), %xmm0			# FP add 
+     	movsd %xmm0,(%rsi, %rax,8)	# FP store
+     	addq $8,%rdi
+     	cmpq %rcx, %rdi
+     	jne .L4
+     ```
+
+### 循环展开
+
+增加一次循环的步长, 在一次循环内进行多次操作
+
+一个2*1循环展开
+
+```c
+for(i=0; i<limit; i+=2) {
+	sum = sum + (a[i] + a[i+1]);
+}
+for(i=0; i<limit; i+=2) {
+	x = x OP (a[i] OP a[i+1]); //这里的OP可以是*
+}
+```
+
+
 
 ## 七 Linking
 
@@ -795,3 +960,132 @@ Linux 系统种可以帮助处理目标文件的工具：
 5. 软件异常处理。C++ 和 Java 通过 try、catch、throw 等语句来提供异常处理功能。异常处理允许程序进行**非本地跳转**（即违反通常的调用/返回栈规则的跳转）来响应错误情况。非本地跳转是一种应用层 ECF，在 C 中由 setjmp和 longjmp 函数提供。
 
 理解：首先要知道，异常控制流是从程序计数器的控制流层面来描述的。异常控制流就是程序计数器的控制流产生了程序外部原因带来的突变。
+
+
+
+### 8.1 异常Exception
+
+==异常==: 是控制流的一些突变, 用来响应处理器状态中的某些变化
+
+#### 8.1.1 异常处理
+
+1. 处理器检测发生事件, 确定异常号k
+2. 触发异常, 通过异常表跳转到处理程序
+   - 异常表起始地址被存放到==异常表基址寄存器==
+3. 处理程序处理完成, 执行“中断返回”指令
+
+##### 异常与过程调用的区别
+
+1. 过程调用会将返回地址压入栈, 而异常返回地址为当前指令(重新执行事件发生时的指令)/下一条指令
+2. 处理程序会将一些额外的处理器状态(如条件码EFLAGS寄存器)入栈
+3. 如果控制从用户程序转移到内核, 所有项目被压入内核栈, 而非用户栈
+4. 异常处理程序运行在内核态
+
+#### 8.1.2 异常的类别
+
+| 类别     | 原因              | 异步/同步 | 返回行为                           |
+| -------- | ----------------- | --------- | ---------------------------------- |
+| 中断     | 来自I/O设备的信号 | 异步      | 总是返回到下一条指令               |
+| 陷阱trap | 有意的异常        | 同步      | 总是返回到下一条指令               |
+| 故障     | 潜在可恢复的错误  | 同步      | 可能返回到当前指令(如果错误能解决) |
+| 终止     | 不可会务的错误    | 同步      | 不会返回                           |
+
+### 8.4 C中的进程控制
+
+#### 8.4.1 获取pid
+
+```c
+#include <sys/types.h> //在Linux中, 定义了pid_t为int
+#include <unistd.h>
+
+pid_t getpid(void); // 获取进程id
+pid_t getppid(void); // 获取父进程id
+```
+
+#### 8.4.2 创建和销毁进程
+
+```c
+#include <stdlib.h>
+
+void exit(int status); // 以status作为退出状态, 终止进程
+```
+
+```c
+#include <sys/types.h> 
+#include <unistd.h>
+
+pid_t fork(void);
+```
+
+- 对父进程返回子进程pid, 对子进程返回0 (可以通过这个来判断当前进程是父or子)
+- 对于父子进程, 他们共享文件(注意输入输出是一种特殊文件)
+
+
+
+#### 8.4.3 回收子进程
+
+当一个进程终止时, core不能立即清除该进程, 而是需要父进程来==回收==(reaped)
+
+- 一个终止但尚未被回收的进程称为==僵死进程==(zombie)
+
+- 如果父进程先终止了, 会安排init进程(pid=1)作为子进程的父进程, 由init进程来回收
+
+
+
+```c
+#include <sys/types.h>
+#include <sys/wait.h>
+
+pid_t waitpid(pid_t pid, int *statusp, int options);
+pid_t wait(int *statusp); // waitpid简化版本, wait(&status) = waitpid(-1, &status, 0)
+
+// 成功, 返回子进程pid, 若option为WNOHANG, 则为0, 其他错误, 为-1
+```
+
+1. pid
+   - pid>0, 等待指定进程
+   - pid=-1, 等待所有子进程
+2. options
+   - `0`: 挂起调用进程, 直到等待集合中有一个进程终止
+   - `WNOHANG`: 检查是否有子进程退出, 没有, 则**立即返回**
+   - `WUNTRACED`: 挂起调用进程, 直到等待集合中一个进程终止/停止
+   - `WCONTINUED`: 挂起调用进程, 直到等待集合中一个进程终止or等待集合中一个被停止的几何收到SIGCONT信号重新执行
+   - 可以用`|`来组合选项
+3. *statusp: 指向进程进程情况status, 在wait.h中定义解释参数的函数
+   - WIFEXITED（status）。如果子进程正常终止，通过调用exit或返回，则返回true。
+     - WEXITSTATUS（status）。返回正常终止的子进程的退出状态。
+       仅在WIFEXITED（）返回true时定义此状态。
+   - WIFSIGNALED（status）。如果子进程因未捕获的信号而终止，则返回true。
+     - WTERMSIG（status）。返回导致子进程终止的信号编号。
+       仅在WIFSIGNALED（）返回true时定义此状态。
+   - WIFSTOPPED（status）。如果导致返回的子进程当前已停止，则返回true。
+     - WSTOPSIG（status）。返回导致子进程停止的信号编号。
+       仅在WIFSTOPPED（）返回true时定义此状态。
+   - WIFCONTINUED（status）。如果子进程通过接收SIGCONT信号重新启动，则返回true。
+
+4. 错误条件
+   - 调用进程无子进程, waitpid返回-1, 设置errno=ECHILD
+   - waitpid被信号中断, 返回-1, errno=EINTR
+
+#### 8.4.4 进程休眠
+
+```c
+#include <unistd.h>
+unsigned int sleep(unsigned int secs);
+// 返回还需要休眠的秒数(如果提前被打断, >0)
+```
+
+#### 8.4.5 加载并运行程序
+
+```c
+#include <unistd.h>
+int execve(const char *filename, const char *argv[], const char *envp[]);
+// 执行成功, 无返回, 错误, 返回-1
+```
+
+- 与fork创建一个新进程不同, execve在当前进程上下文中加载并运行一个新程序
+
+
+
+### 8.5 信号
+
