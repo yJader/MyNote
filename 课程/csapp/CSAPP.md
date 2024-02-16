@@ -1004,7 +1004,7 @@ pid_t getppid(void); // 获取父进程id
 
 #### 8.4.2 创建和销毁进程
 
-```c
+```c
 #include <stdlib.h>
 
 void exit(int status); // 以status作为退出状态, 终止进程
@@ -1088,4 +1088,120 @@ int execve(const char *filename, const char *argv[], const char *envp[]);
 
 
 ### 8.5 信号
+
+> ==信号==: 通知进程 系统中发生了某种类型的事件
+
+一些常用信号
+
+| 序号 | 名称                    | 默认行为               | 相应事件                             |
+| ---- | ----------------------- | ---------------------- | ------------------------------------ |
+| 2    | SIGINT (interrupt)      | 终止                   | CtrlC                                |
+| 8    | SIGFPE                  | 终止并写入外存         | 浮点错误(除以零)                     |
+| 11   | SIGSEGV (segment fault) | 终止并写入外存         | 无效的内存引用(段异常)               |
+| 17   | SIGCHLD (children)      | 忽略                   | 一个子进程停止或者终止 (shell中常用) |
+| 18   | SIGCONT (continue)      | 忽略                   | 继续进程(如果进程停止的话)           |
+| 19   | SIGSTOP                 | 停止 直到下一个SIGCONT | 不是来自终端的停止信号               |
+| 20   | SIGTSTP (terminal stop) | 停止 直到下一个SIGCONT | 来自终端的停止信号                   |
+
+#### 8.5.1 信号术语
+
+> 发送信号到目的进程的步骤
+
+1. 发送信号
+   - 内核通过更新目的进程上下文中的某个状态(? 哪个), 发送一个信号给目的进程
+   - 信号的发送原因
+     - 内核检测到一个系统事件
+     - 一个进程调用kill函数, 主动发送信号
+2. 接收信号: 目的进程对信号的发送做出反应
+   - 进程可以忽略这个信号, 终止or执行一个信号处理程序(signal handler)的用户层函数捕获信号
+3. ==待处理信号==: 一个已发送但尚未被接受的信号
+   - **一种类型**最多只会有**一个待处理信号**, 不会排队, 多的信号会被**丢弃**
+   - 待处理信号为每个进程在pending位向量中维护着待处理信号的集合, 在blocked位向量中维护被阻塞的信号集合
+     发送一个信号k, 就会设置pending中的第k位, 接收一个信号k, 就会清除pending中的第k位
+
+#### 8.5.2 发送信号
+
+##### 进程组
+
+每个进程都属于一个进程组, 用一个正整数进程组ID(groupid, gid)表示
+
+```c
+#include <unistd.h>
+
+pid_t getpgrp(void); # 获取调用进程的进程组id
+int setpgid(pid_t pid, pid_t pgid); # 设置pid的进程所属的进程组id为gpid
+# 返回: 成功0,失败1
+# 若pid=0, 使用当前进程pid, 若gpid等于0, 则进程组id=pid
+```
+
+##### /bin/kill 发送信号
+
+```bash
+linux> /bin/kill -9 12315 # 向进程12315发送信号9(SIGKILL)
+linux> /bin/kill -9 -12315 # 向进程组*12315发送信号9(SIGKILL)
+```
+
+##### 键盘 发送信号
+
+Ctrl+C会导致内核发送一个SIGINT到**前台进程组**的所有进程, 终止前台作业
+
+##### kill函数 发送信号
+
+```c
+#include <sys/types.h> 
+#include <signal.h>
+
+int kill(pid_t pid, int sig); # 发送sig到进程pid, 如果pid=0 发送到当前进程所在进程组的所有进程
+# 成功返回0, 失败返回-1
+```
+
+##### alarm函数 定时发送AIGALRM信号
+
+```c
+#include <unistd.h>
+
+unsigned int alarm(unsigned int secs);# 在secs秒后发送SIGALARM信号给调用进程
+# 返回前一次alarm剩余秒数, 若没有, 返回0
+```
+
+#### 8.5.3 接收信号
+
+当进程p从内核态切换回用户态时(系统调用trap / 上下文切换), 内核会检查进程p的未被阻塞的待处理信号集合, 为空, 正常执行下一条指令, 不为空, 选择某个信号k(通常是最小的信号k), 强制p结合接收信号k
+
+##### 改变信号行为
+
+```c
+#include <signal.h>
+typedef void (*sighandler_t)(int); # 函数指针
+
+sighandler_t signal(int signum, sighandler_t handler);
+# 成功, 返回前一次处理程序的指针, 出错, 返回SIG_ERR(不会设置errno)
+```
+
+handler说明: 
+
+- handler=`SIG_IGN`: 忽略signum的信号
+- handler=`SIG_DEF`: 将类型为signum的信号行为恢复默认
+- handler为用户自定义函数(==信号处理程序==)地址, 进程收到signum信号时, 就会调用这个程序, 称为**处理信号**
+
+
+
+#### 8.5.4 阻塞和解除阻塞信号
+
+```c
+#include <signal.h>
+
+int sigprocmask(int how, const sigset_t *set, sigset_t *oldset); 
+int sigemptyset(sigset_t *set);
+int sigfillset(sigset_t *set);
+int sigaddset(sigset_t *set, int signum);
+int sigdelset(sigset_t *set, int signum);
+# Returns: 0 if OK, −1 on error
+int sigismember(const sigset_t *set, int signum);
+# Returns: 1 if member, 0 if not, −1 on error
+```
+
+
+
+##### sigprocmask
 
