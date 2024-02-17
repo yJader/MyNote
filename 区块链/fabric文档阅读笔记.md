@@ -560,3 +560,21 @@ private void updateNonExistentAsset() {
 
 ```
 
+## 应用场景示例 商业票据交易
+
+![commercialpaper.tutorial](https://hyperledger-fabric.readthedocs.io/zh-cn/latest/_images/commercial_paper.diagram.1.png)
+
+*在本教程中，MagnetoCorp 和 DigiBank 这两个组织使用 Hyperledger Fabric 区块链网络 PaperNet 相互交易商业票据。*
+
+一旦建立了一个基本的网络，您就将扮演 MagnetoCorp 的员工 Isabella，她将代表公司发行商业票据。然后，您将转换角色，担任 DigiBank 的员工 Balaji，他将购买此商业票据，持有一段时间，然后向 MagnetoCorp 赎回该商业票据，以获取小额利润。
+
+### 网络结构
+
+![commercialpaper.network](./fabric文档阅读笔记.assets/commercial_paper.diagram.3.png)
+
+The Hyperledger Fabric 基础网络的组成部分包括一个节点及该节点的账本数据库，一个排序服务和一个证书授权中心。以上每个组件都在一个 Docker 容器中运行。
+
+Org1 = DigiBank; Org2 = MagnetoCorp
+
+
+
