@@ -28,7 +28,6 @@
 
    - 使用的最大地址: 47位(`0x7FFFFFFFFFF`), 128TB
 
-
 ## 第4章 处理器体系结构
 
 > 参考: [CSAPP笔记 | Kiprey's Blog](https://kiprey.github.io/2020/07/csapp/#四、-处理器体系结构)
@@ -310,7 +309,7 @@ PC选择$valC$(选择分支)还是$valP$(不选择分支), 最后都有可能出
 2. 优化1: <img src="https://yj-notes.oss-cn-hangzhou.aliyuncs.com/image/202403121514507.png" alt="img" style="zoom:67%;" /> 
 3. 优化2: <img src="https://yj-notes.oss-cn-hangzhou.aliyuncs.com/image/202403121516591.png" alt="image-20240312151618542" style="zoom:50%;" /> 
 4. 优化3: 从执行阶段转发
-  <img src="https://yj-notes.oss-cn-hangzhou.aliyuncs.com/image/202403121517128.png" alt="image-20240312151732573" style="zoom:50%;" />
+    <img src="https://yj-notes.oss-cn-hangzhou.aliyuncs.com/image/202403121517128.png" alt="image-20240312151732573" style="zoom:50%;" />
 
 ##### 加载/使用数据冒险
 
