@@ -305,7 +305,7 @@ PC选择$valC$(选择分支)还是$valP$(不选择分支), 最后都有可能出
 
 ##### 转发 以避免数据冒险
 
-1. ==转发==(formarding)。将结果值直接从一个流水线阶段传到较早阶段的技术称为数据转发，也称旁路(bypassing)。
+1. ==转发==(forwarding)。将结果值直接从一个流水线阶段传到较早阶段的技术称为数据转发，也称旁路(bypassing)。
 2. 优化1: <img src="https://yj-notes.oss-cn-hangzhou.aliyuncs.com/image/202403121514507.png" alt="img" style="zoom:67%;" /> 
 3. 优化2: <img src="https://yj-notes.oss-cn-hangzhou.aliyuncs.com/image/202403121516591.png" alt="image-20240312151618542" style="zoom:50%;" /> 
 4. 优化3: 从执行阶段转发
