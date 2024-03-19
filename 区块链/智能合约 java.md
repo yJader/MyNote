@@ -5,3 +5,7 @@
 [Fabric Java API documentation](https://hyperledger.github.io/fabric-chaincode-java/)
 
 - [fabric-chaincode-java/COMPATIBILITY.md at main · hyperledger/fabric-chaincode-java (github.com)](https://github.com/hyperledger/fabric-chaincode-java/blob/main/COMPATIBILITY.md)
+
+
+
+[一个小时带你用 Hyperledger Fabric开发一个Demo - 简书 (jianshu.com)](https://www.jianshu.com/p/e16345cc2cde)
