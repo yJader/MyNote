@@ -659,7 +659,7 @@ hello world! hello git!
 
 ### 3. 分支的本质
 
-<img src="media\分支图解.png" alt="分支图解" style="zoom: 33%;" />
+<img src="./Git.assets/分支图解.png" alt="分支图解" style="zoom:33%;" />
 
 * master、hot-fix 其实都是指向具体版本记录的指针。当前所在的分支，其实是由HEAD决定的。所以创建分支的本质就是==多创建一个指针==。
 
@@ -1142,6 +1142,16 @@ hello world! hello git!
   ```
 
   自动地把回车（CR）和换行（LF）转换成换行（LF），而在检出代码时把换行（LF）转换成回车（CR）和换行（LF）
+
+### 3. 启用新添加的ignore文件
+
+如果gitignore中的文件之前已经被跟踪, 后面再直接添加是无效的
+
+```shell
+git rm -r --cached . 
+git add .
+git commit -m "message"
+```
 
 
 

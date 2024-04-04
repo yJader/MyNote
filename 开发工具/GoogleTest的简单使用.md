@@ -33,8 +33,6 @@
 
 ### CMakeLists.txt配置
 
-> 只能说, 很麻烦, 为什么不用简单易懂的yml格式呢, xml也行啊
-
 1. `/CMakeLists.txt` 
 
    ```cmake
