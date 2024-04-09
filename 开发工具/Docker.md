@@ -6,7 +6,7 @@
 
    ```shell
    docker pull mysql:8.0.16
-   docker run -p 3306:3306 --name mysql -e MYSQL_ROOT_PASSWORD=123456  -d mysql:8.0.16
+   docker run -p 3308:3306 --name mysql -e MYSQL_ROOT_PASSWORD="jkl;jkl;"  -d mysql
    ```
 
 2. 拷贝这个容器的配置文件
@@ -27,16 +27,25 @@
    ```shell
    #!/bin/sh
    docker run \
-   -p 3308:3306 \ #主机3308→容器3306端口映射
+   #主机3308→容器3306端口映射
+   -p 3308:3306 \
    --name mysql \
-   --privileged=true \ #挂载文件权限设置
-   --restart unless-stopped \ #设置 开机后自动重启容器
-   -v /root/my_docker/mysql8.0.16/mysql:/etc/mysql \ # 挂载配置文件
-   -v /root/my_docker/mysql8.0.16/logs:/logs \	# 挂载日志
-   -v /root/my_docker/mysql8.0.16/data:/var/lib/mysql \ # 挂载数据文件 持久化到主机
-   -v /etc/localtime:/etc/localtime \ #容器时间与宿主机同步
-   -e MYSQL_ROOT_PASSWORD=123456 \ # 设置密码
-   -d mysql:8.0.16 # 后台启动mysql
+   #挂载文件权限设置
+   --privileged=true \
+   #设置 开机后自动重启容器
+   --restart unless-stopped \
+   # 挂载配置文件
+   -v /root/my_docker/mysql8.0.16/mysql:/etc/mysql \
+   # 挂载日志
+   -v /root/my_docker/mysql8.0.16/logs:/logs \
+   # 挂载数据文件 持久化到主机
+   -v /root/my_docker/mysql8.0.16/data:/var/lib/mysql \
+   #容器时间与宿主机同步
+   -v /etc/localtime:/etc/localtime \
+   # 设置密码
+   -e MYSQL_ROOT_PASSWORD="jkl\;jkl\;" \
+   # 后台启动mysql
+   -d mysql
    ```
 
 5. 运行脚本
