@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="xv6-riscv-riscv">
-    <CLASSES>
-      <root url="jar://$PROJECT_DIR$/课程/MIT6.S081/xv6-riscv-riscv.zip!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>
