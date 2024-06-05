@@ -24,7 +24,7 @@ class Passthrough extends Module {
 - 在 Chisel 中，`Module` 是所有硬件组件的基类，代表一个可综合的硬件模块。
 - `Bundle`: hardware struct type, 封装了两个值, in和out
   - in和out都是4位宽的无符号整数
-- `:= `: 一个Chisel的操作符, 表示符号右部drive左部
+- `:= `: 一个**Chisel的特殊操作符**, 表示符号右部drive左部
 
 ```scala
 // Scala Code: Elaborate our Chisel design by translating it to Verilog
@@ -116,6 +116,14 @@ println("SUCCESS!!") // Scala Code: if we get here, our tests passed!
 
 ## Combinational Logic
 
+### 基本Chisel 类型
+
+`UInt`, `n.U`: unsigned integer;
+
+`SInt`, `n.S`: signed integer;
+
+`Bool`, `true.B`or`false.B`:  true or false may be connected and operated upon
+
 ### Common Operators
 
 ```scala
@@ -151,7 +159,19 @@ println(getVerilog(new MyModule))
 
 
 
+`Mux()`: 可以理解为三元运算符`bool ? a : b` 
 
+- Multiplexer: 多路选择器
+
+`Cat()`: 连接两个数
+
+`+&`: 加的结果拓展一位(用来看溢出)
+
+
+
+更多的操作详见 cheatsheet
+
+- 吐槽 这个格式做的有点丑啊 有空学学给他重做一下
 
 
 
