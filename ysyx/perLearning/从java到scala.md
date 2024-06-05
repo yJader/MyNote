@@ -205,3 +205,17 @@ import chisel3.iotesters.{ChiselFlatSpec, Driver, PeekPokeTester}
 ```
 
 对于plugin, 需要指定到`2.13.10`中的`.10`, 而`::`只会补全为`_2.13`, 如果使用`::`就会找不到库
+
+
+
+## BSP
+
+> [Installation and IDE Support :: Mill (mill-build.com)](https://mill-build.com/mill/Installation_IDE_Support.html#_intellij_idea_support)
+
+```bash
+mill mill.bsp.BSP/install
+```
+
+**Using Metals**
+
+When using Metals by default Bloop will be used as your build server unless you explicitly choose Mill. When in a Mill workspace use the "**Switch Build Server**" command from Metals which will allow you to switch to **using Mill as your build server**. If no `.bsp/mill-bsp.json` file exists, Metals will automatically create it for you and then connect to Mill.
