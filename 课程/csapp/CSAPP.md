@@ -1072,8 +1072,6 @@ pid_t fork(void);
 
 - 如果父进程先终止了, 会安排init进程(pid=1)作为子进程的父进程, 由init进程来回收
 
-
-
 ```c
 #include <sys/types.h>
 #include <sys/wait.h>
