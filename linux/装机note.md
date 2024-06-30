@@ -164,7 +164,7 @@ git clone https://github.com/zsh-users/zsh-syntax-highlighting ${ZSH_CUSTOM:-~/.
 `vim ~/.zshrc` 查找 `plugins` 在括号中添加插件列表
 
 ```
-zsh-autosuggestions zsh-syntax-highlighting
+sudo zsh-autosuggestions zsh-syntax-highlighting
 ```
 
 ## Docker
