@@ -1,0 +1,214 @@
+# In Search of an Understandable Consensus Algorithm (Extended Version)
+
+## 2 Replicated state machines
+
+用于实际系统的共识算法通常具有以下**特性**：
+
+- 它们在所有非拜占庭（即没有恶意行为）的条件下确保**安全性**（即永远不会返回一个不正确的结果），这些条件包括网络延迟、网络分区以及数据包的丢失、重复和乱序。
+
+  - > [拜占庭将军问题 (The Byzantine Generals Problem) - Liebing's Blog](https://liebing.org.cn/byzantine-generals-problem.html)
+    >
+    > 现有的分布式一致性协议和算法主要可分为两类:
+    >
+    > - 一类是**故障容错算法(Crash Fault Tolerance, CFT)**, 即非拜占庭容错算法, 解决的是分布式系统中存在故障, 但不存在恶意攻击的场景下的共识问题. 也就是说, 在该场景下可能存在消息丢失, 消息重复, 但不存在消息被篡改或伪造的场景. 一般用于局域网场景下的分布式系统, 如分布式数据库. 属于此类的常见算法有Paxos算法, ==Raft算法==, ZAB协议等.
+    > - 一类是**拜占庭容错算法**, 可以解决分布式系统中既存在故障, 又存在恶意攻击场景下的共识问题. 一般用于互联网场景下的分布式系统, 如在数字货币的区块链技术中. 属于此类的常见算法有PBFT算法, PoW算法.
+
+- 只要大多数服务器可以正常运行并且能够相互通信并与客户端通信，它们就能完全功能化（可用）。因此，一个典型的由五个服务器组成的集群可以容忍任何两个服务器的故障。假定服务器会因停止而发生故障；它们可以通过从持久存储中恢复状态并重新加入集群来重启。
+
+- 它们不依赖于时间来确保日志的一致性：有故障的时钟和极端的消息延迟最多只能导致可用性问题。
+
+- 在常见情况下，一个命令可以在集群中的大多数成员对单轮远程过程调用作出响应后立即完成；少数响应慢的服务器不必影响整个系统的性能。
+
+## 5 The Raft consensus algorithm
+
+Leader的职责
+
+- 从Client接收Log Entries(客户端操作)，在其他servers上复制它们
+- 告诉servers何时可以安全地将log entries应用于其状态机
+
+由Leader管理的好处: 
+
+- 不需要经过讨论来决定放置log entries的位置
+- 数据传输方向简单(Leader→servers)
+
+Raft的特点之一--对同步中的问题的分解(decomposes the consensus problem)
+
+1. **Leader election**: 一个Leader挂掉时, 需要选举出新Leader (具体实现-Section 5.2)
+2. **Log replication**:  Leader从Client接受Log Entries, 并将它复制给集群(其他日志会与Leader的保持一致)
+3. **Safety**: 关键在于“状态机安全属性”（State Machine Safety Property）, 这个属性保证了: 如果一个server应用了一个log entry, 其他server不会将其他command应用到同一个log (具体实现-Section 5.4)
+   - 理想情况下，每个entry对应一个唯一的command，但是由于分布式系统中可能出现的故障（如领导者更换、网络分区等），可能会导致在某些情况下，同一个索引位置上的entry被尝试赋予不同的command
+
+### 一些note
+
+#### state in server
+
+**所有节点**都会持有的**持久化状态**信息（在响应 RPC 前会先将更新写入到持久存储）：
+
+-  `currentTerm`：当前 Term ID（初值为 `0`, 单调递增） 
+-  `votedFor`: 该 Term 中已接收到来自该节点的选票的 Candidate ID
+-  `log[]`: 日志记录。第一个日志记录的 index 值为 `1`
+
+**所有节点**都会持有的**易失性状态**信息：
+
+-  `commitIndex`: 最后一个已提交日志记录的 index（初值为 `0`）
+-  `lastApplied`: 最后一个已应用至上层状态机的日志记录的 index（初值为 `0`）
+
+**Leader** 才会持有的**易失性状态**信息（会在每次选举完成后初始化）：
+
+- `nextIndex[]`: 每个节点即将为其发送的下一个日志记录的 index（初值均为 Leader 最新日志记录 index 值 + 1）
+- `matchIndex[]`: 每个节点上已备份的最后一条日志记录的 index（初值均为 `0`
+
+
+
+####  `AppendEntries RPC`
+
+**AppendEntries RPC**：由 Leader 进行调用，用于将日志记录备份至 Follower，同时还会被用来作为心跳信息
+
+参数：
+- `term`: Leader 的 Term ID
+- `leaderId`: Leader 的 ID
+- `prevLogIndex`: 在正在备份的日志记录之前的日志记录的 index 值
+- `prevLogTerm`: 在正在备份的日志记录之前的日志记录的 Term ID
+- `entries[]`: 正在备份的日志记录
+- `leaderCommmit`: Leader 已经提交的最后一条日志记录的 index 值
+
+返回值：
+
+- `term`: 接收方的当前 Term ID
+- `success`: 当 Follower 能够在自己的日志中找到 index 值和 Term ID 与 `prevLogIndex` 和 `prevLogTerm` 相同的记录时为 `true` 
+
+接收方在接收到该 RPC 后会进行以下操作：
+
+1. 检查调用者的term: 若 `term < currentTerm`，返回 `false` 
+2. 检查调用者的prevLog的情况: 若日志中不包含index 值和 Term ID 与 `prevLogIndex` 和 `prevLogTerm` 相同的记录，返回 `false`
+3. 检查自身的日志情况: 如果日志中存在与正在备份的日志记录相冲突的记录（有相同的 index 值但 Term ID 不同），删除该记录以及之后的所有记录
+4. 在保存的日志后追加新的日志记录
+5. 若 `leaderCommit > commitIndex`，令 `commitIndex` 等于 `leaderCommit` 和最后一个新日志记录的 index 值之间的最小值
+
+一些其他注意事项: 
+
+- 该RPC用作心跳时, 参数中不携带log entries
+
+#### `RequestVote RPC`
+
+**RequestVote RPC**：由 Candidate 调起, 以获取选票 ([Leader election]()相关)
+
+参数：
+
+- `term`：Candidate 的 Term ID
+-  `candidateId`: Candidate 的 ID
+-  `lastLogIndex`: Candidate 所持有的最后一条日志记录的 index
+
+- `lastLogTerm`: Candidate 所持有的最后一条日志记录的 Term ID
+
+返回值：
+
+- `term`：接收方的 Term ID
+-  `voteGranted`：接收方是否同意给出选票
+
+接收方在接收到该 RPC 后会进行以下操作：
+
+1. 若 `term < currentTerm`，返回 `false`
+2. 若 `votedFor == null` , 且给定的日志记录信息可得出对方的日志和自己的相同甚至更新，返回 `true` 
+
+#### Rules for Servers
+
+**对于所有节点：**
+
+- 若 `commitIndex > lastApplied`，则对 `lastApplied` 加 1，并将 `log[lastApplied]` 应用至上层状态机
+- 若 RPC 请求或相应内容中携带的 `term > currentTerm`，则令 `currentTerm = term`，且 Leader 降级为 Follower
+
+**对于 Follower：**
+
+- 负责响应 Candidate 和 Leader 的 RPC
+- 如果在 Election Timeout 之前没能收到来自当前 Leader 的 AppendEntries RPC 或将选票投给其他 Candidate，则进入 Candidate 角色
+
+**对于 Candidate：**
+
+- 在进入 Candidate 角色时，发起 Leader 选举：
+  1. `currentTerm` 加 1
+  2. 将选票投给自己
+  3. 重置 Election Timeout 计时器
+  4. 发送 RequestVote RPC 至其他所有节点
+- 如果接收到来自其他大多数节点的选票，则进入 Leader 角色
+- 若接收到来自其他 Leader 的 AppendEntries RPC，则进入 Follower 角色
+- 若再次 Election Timeout，那么重新发起选举
+
+**对于 Leader：**
+
+- 在空闲时周期地向 Follower 发起空白的 AppendEntries RPC（作为心跳信息），以避免 Follower 发起选举
+- 若从客户端处接收到新的命令，则将该命令追加到所存储的日志中，并在顺利将该命令应用至上层状态机后返回响应
+- 如果最新一条日志记录的 index 值大于等于某个 Follower 的 `nextIndex` 值，则通过 AppendEntries RPC 发送在该 `nextIndex` 值之后的所有日志记录：
+  1. 如果备份成功，那么就更新该 Follower 对应的 `nextIndex` 和 `matchIndex` 值
+  2. 否则，对 `nextIndex` 减 1 并重试
+
+- 如果存在一个值 `N`，使得 `N > commitIndex`，且大多数的 `matchIndex[i] >= N`，且 `log[N].term == currentTerm`，令 `commitIndex = N`
+
+
+
+### 5.1 Raft basics
+
+典型的Raft集群server数量为5, 可以容忍2台机器的故障
+
+#### server state
+
+server的三种状态: ***leade, follower, or candidate*** 
+
+- leader: 处理client的请求, 分发给followers
+- followers: 只响应来自leader/candidate的请求
+  - 如果client请求到follower, 它会将请求转发给leader
+- candidate: 用于选举leader
+
+```mermaid
+flowchart LR
+	0((开始)) --> 1([Follower])
+	1 --"term到期, 开始选举"--> 2([Candidate])
+	2 --"赢得选举\n(获得大部分选票)"--> 3([Leader])
+	2 --"超时, 重新选举"--> 2
+	2 --"发现当前Leader, \nor落选or发现高term"--> 1
+	3 -- "发现其他server有更高的term" --> 1
+```
+
+
+
+#### *term*
+
+***term*** (任期): Raft算法中的时间单位
+
+term的更新
+
+- 一个term开始于一次选举(election), 选举中胜出的的candidate将会在剩余的term内担任leader
+- 如果一次election失败, 会重新开启一次election(伴随一个新的term)
+- Raft会确保一个term中最多只有一个leader 
+  - Note: 网络分割怎么办???
+
+term的作用--通过比较`currentTerm` 
+
+- 在servers通信(RPC)时, 都会比较term: 
+  - 如果比自己的大, 更新到大的
+    - 如果server是candidate/leader, 还会把自己转换为follower
+  - 如果比自己的小, 拒绝此次请求
+
+### 5.2 Leader election
+
+election触发时机: 
+
+- Leader通过向Follower发送无Log Entries的AppendEntries RPCs实现heartbeats
+- Follower一段时间（***election timeout***）后还没有收到Leader的Heartbeat，就开始选举
+
+election流程： 
+
+1. currentTerm++, 转换为candidate状态
+2. `voteFor`  = 自身ID, 并行发送`RequestVote RPCs`到集群中的每个server
+3. 等待, 直到: 
+   - 选举胜出: 收获大部分的vote(通过RPC的Response统计)
+   - 其他server成为leader: 通过其他Leader的AppendEntries RPC中的term比较得出
+     - 如果leader的term更大/等于, 偷偷认可它, 转为Follower state
+     - 如果leader的term更小, 拒绝此次RPC, 保持candidate state
+   - 一段时间后没有胜者: 重新开始一次投票(执行1, 2)
+     - split vote: 同时有多个candidate, 分票导致无法决出胜者
+
+如何保证投票能决出胜者?
+
+- 随机选择election timeout的时长, 防止扎堆(random到的时间短的candidate, 它会抢先获取到vote)
+

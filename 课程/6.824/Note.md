@@ -876,29 +876,55 @@ Robert教授：
 
 回答：master告知的。master告诉primary需要更新secondaries，这形成了new replica group for that chunk。
 
+---
+
+这里假设一个场景，我们讨论一下可能产生的一致性问题，这里有一个M（maseter），P（primary），S（Secondary）：
+
+**某时刻起，M得不到和P之间的ping-pong通信的响应，什么时候Master会指向一个新的P？**
+
+1. M比如等待P的lease到期，否则会出现两个P
+2. 此时可能有些Client还在和这个P交互
+
+**假设我们此时选出新P，有两个P同时存在，这种场景被称为脑裂(split-brain)，此时会出现很多意料外的情况，比如数据写入顺序混乱等问题，严重的脑裂问题可能会导致系统最后出现两个Master**。
+
+这里M知道P的lease期限，在P的lease期限结束之前，不会选出新P，即使M无法和P通信，但其他Client可能还能正常和P通信。
+
 
 
 ## 3.8 GFS-一致性(Consistency)
 
 > [spanner(谷歌公司研发的数据库) - 百度百科](https://baike.baidu.com/item/spanner/6763355?fr=aladdin)
 
- 这里一致性问题，可以简单地归结于，当你完成一个append操作后，进行read操作会读取到什么数据？
+ 这里一致性问题，可以简单地归结于，当你完成一个append操作后，(在不同的副本中)进行read操作会读取到什么数据？
 
- 这里假设一个场景，我们讨论一下可能产生的一致性问题，这里有一个M（maseter），P（primary），S（Secondary）：
+因为大概率存在的网络问题, 副本中的append请求会不一致(有的收到, 有的没收到)
 
-- **某时刻起，M得不到和P之间的ping-pong通信的响应，什么时候Master会指向一个新的P？**
+![append导致不一致状态](Note.assets/append导致不一致状态.png)
 
-  1. M比如等待P的lease到期，否则会出现两个P
-  2. 此时可能有些Client还在和这个P交互
 
-  **假设我们此时选出新P，有两个P同时存在，这种场景被称为脑裂(split-brain)，此时会出现很多意料外的情况，比如数据写入顺序混乱等问题，严重的脑裂问题可能会导致系统最后出现两个Master**。
 
-  这里M知道P的lease期限，在P的lease期限结束之前，不会选出新P，即使M无法和P通信，但其他Client可能还能正常和P通信。
+### 如何实现强一致
 
-------
-
-这里扩展一下问题，**如何达到更强的一致性(How to get stronger consistency)？**
+这里扩展一下问题，**如何达到更强的一致性(How to get stronger consistency)？** 
 
 比如这里GFS有时候写入会失败，导致一部分S有数据，一部分S没数据（虽然对外不可见这种失败的数据）。我们或许可以做到要么所有S都成功写入，要么所有S都不写入。
 
 事实上Google还有很多其他的文件系统，有些具有更强的一致性，比如Spanner有更强的一致性，且支持事务，其应用场景和这里不同。我们知道这里GFS是为了运行mapreduce而设计的。
+
+有人会问，如何将这里的设计转变成强一致的系统，从而与我们前面介绍的单服务器模型更接近，也不会产生一些给人“惊喜”的结果。实际上我不知道怎么做，因为这需要完全全新的设计。目前还不清楚如何将GFS转变成强一致的设计。但是，如果你想要将GFS升级成强一致系统，我可以为你列举一些你需要考虑的事情：
+
+- 你可能需要让Primary来探测重复的请求，这样第二个写入数据B的请求到达时，Primary就知道，我们之前看到过这个请求，可能执行了也可能没执行成功。Primay要尝试确保B不会在文件中出现两次。所以首先需要的是探测重复的能力。
+
+- 对于Secondary来说，如果Primay要求Secondary执行一个操作，Secondary必须要执行而不是只返回一个错误给Primary。对于一个严格一致的系统来说，是不允许Secondary忽略Primary的请求而没有任何补偿措施的。所以我认为，Secondary需要接受请求并执行它们。如果Secondary有一些永久性故障，例如磁盘被错误的拔出了，你需要有一种机制将Secondary从系统中移除，这样Primary可以与剩下的Secondary继续工作。但是GFS没有做到这一点，或者说至少没有做对。
+
+- 
+
+  当Primary要求Secondary追加数据时，直到Primary确信所有的Secondary都能执行数据追加之前，Secondary必须小心不要将数据暴露给读请求。所以对于写请求，你或许需要多个阶段。在第一个阶段，Primary向Secondary发请求，要求其执行某个操作，并等待Secondary回复说能否完成该操作，这时Secondary并不实际执行操作。在第二个阶段，如果所有Secondary都回复说可以执行该操作，这时Primary才会说，好的，所有Secondary执行刚刚你们回复可以执行的那个操作。这是现实世界中很多强一致系统的工作方式，这被称为两阶段提交（Two-phase commit）。
+
+- 
+
+  另一个问题是，当Primary崩溃时，可能有一组操作由Primary发送给Secondary，Primary在确认所有的Secondary收到了请求之前就崩溃了。当一个Primary崩溃了，一个Secondary会接任成为新的Primary，但是这时，新Primary和剩下的Secondary会在最后几个操作有分歧，因为部分副本并没有收到前一个Primary崩溃前发出的请求。所以，新的Primary上任时，需要显式的与Secondary进行同步，以确保操作历史的结尾是相同的。
+
+- 
+
+  最后，时不时的，Secondary之间可能会有差异，或者客户端从Master节点获取的是稍微过时的Secondary。系统要么需要将所有的读请求都发送给Primary，因为只有Primary知道哪些操作实际发生了，要么对于Secondary需要一个租约系统，就像Primary一样，这样就知道Secondary在哪些时间可以合法的响应客户端。
