@@ -34,7 +34,7 @@ sudo apt install vim git
 
 
 
-### ssh
+### SSH配置
 
 ```bash
 sudo apt install openssh-server
@@ -94,7 +94,7 @@ sudo apt install net-tools
 
 
 
-## ZSH
+## ZSH终端
 
 ### 安装 Zsh
 
@@ -106,7 +106,7 @@ sudo apt install zsh
 chsh -s /bin/zsh
 ```
 
-### 安装 Oh My Zsh
+### 安装 Oh My Zsh框架
 
 ```bash
 # 安装 Oh My Zsh
@@ -135,7 +135,7 @@ vim ~/.zshrc
 
 ### 抄来的插件配置
 
-> [常用的oh-my-zsh插件 - 知乎 (zhihu.com)](https://zhuanlan.zhihu.com/p/61447507)
+> [常用的oh-my-zsh插件 - 知乎 (zhihu.com)](https://zhuanlan.zhihu.com/p/61447507) 选了一些个人常用的
 
 #### zsh-autosuggestions
 
@@ -175,8 +175,6 @@ sudo zsh-autosuggestions zsh-syntax-highlighting
 
 1. Set up Docker's `apt` repository.
 
-   
-
    ```bash
    # Add Docker's official GPG key:
    sudo apt-get update
@@ -192,42 +190,36 @@ sudo zsh-autosuggestions zsh-syntax-highlighting
      sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
    sudo apt-get update
    ```
-
+   
    > **Note**
    >
    > If you use an Ubuntu derivative distro, such as Linux Mint, you may need to use `UBUNTU_CODENAME` instead of `VERSION_CODENAME`.
-
+   
 2. Install the Docker packages.
 
-   Latest Specific version
-
-   ------
+   (Latest Specific version)
 
    To install the latest version, run:
 
-   
-
-   ```console
-   $ sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+   ```shell
+sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
    ```
-
-   ------
 
 3. Verify that the Docker Engine installation is successful by running the `hello-world` image.
 
-   
-
-   ```console
-   $ sudo docker run hello-world
+   ```shell
+   sudo docker run hello-world
    ```
-
+   
    This command downloads a test image and runs it in a container. When the container runs, it prints a confirmation message and exits.
+
+   
 
 ## 远程桌面
 
-我希望实现的是远程连接到ubuntu22.04的:0桌面并进行远程控制
-
-ChatGPT
+> 以下为当时提问GPT得到的回复, 似乎碰到了一些小挫折, 解决过程忘记记录了QAQ
+>
+> 欢迎补充(PR)
 
 要远程连接到 Ubuntu 22.04 的 `:0` 桌面并进行远程控制，通常可以使用 VNC 或者 X11vnc 工具。以下是详细步骤：
 
@@ -418,7 +410,7 @@ x0vncserver -display :0 -rfbauth ~/.vnc/passwd -rfbport 5900
 
 
 
-## 问题
+## 一些问题
 
 ### 重启后没网
 
@@ -428,7 +420,13 @@ x0vncserver -display :0 -rfbauth ~/.vnc/passwd -rfbport 5900
 
 原因: NetworkManager服务启动失败
 
+解决方案: 停止网络管理服务，删除网络状态文件，再重新启动网络服务
 
+```shell
+service NetworkManager stop
+sudo rm /var/lib/NetworkManager/NetworkManager.state
+service NetworkManager start
+```
 
 
 

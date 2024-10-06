@@ -1,5 +1,9 @@
 # In Search of an Understandable Consensus Algorithm (Extended Version)
 
+> [In Search of an Understandable Consensus Algorithm (mit.edu)](https://pdos.csail.mit.edu/6.824/papers/raft-extended.pdf)
+>
+> [Raft 论文详析 - 知乎 (zhihu.com)](https://zhuanlan.zhihu.com/p/33816607)
+
 ## 2 Replicated state machines
 
 用于实际系统的共识算法通常具有以下**特性**：
@@ -35,10 +39,18 @@ Raft的特点之一--对同步中的问题的分解(decomposes the consensus pro
 
 1. **Leader election**: 一个Leader挂掉时, 需要选举出新Leader (具体实现-Section 5.2)
 2. **Log replication**:  Leader从Client接受Log Entries, 并将它复制给集群(其他日志会与Leader的保持一致)
-3. **Safety**: 关键在于“状态机安全属性”（State Machine Safety Property）, 这个属性保证了: 如果一个server应用了一个log entry, 其他server不会将其他command应用到同一个log (具体实现-Section 5.4)
-   - 理想情况下，每个entry对应一个唯一的command，但是由于分布式系统中可能出现的故障（如领导者更换、网络分区等），可能会导致在某些情况下，同一个索引位置上的entry被尝试赋予不同的command
+3. **Safety**: 关键在于“状态机安全属性”（State Machine Safety Property）, 这个属性保证了: 如果一个server应用了一个log entry, 其他server不会将其他命令应用到同一个log (具体实现-Section 5.4)
+   - 理想情况下，每个entry对应一个唯一的命令，但是由于分布式系统中可能出现的故障（如领导者更换、网络分区等），可能会导致在某些情况下，同一个索引位置上的entry被尝试赋予不同的命令
 
-### 一些note
+### Raft特性
+
+- **Election Safety**（选举安全）：在任意给定的 Term 中，至多一个节点会被选举为 Leader ([5.2 Leader election](# 5.2 Leader election))
+- **Leader Append-Only**（Leader 只追加）：Leader 绝不会覆写或删除其所记录的日志，只会追加日志 ([5.3 Log replication](# 5.3 Log replication))
+- **Log Matching**（日志匹配）：若两份日志在给定 Term 及给定 index 值处有相同的记录，那么两份日志在该位置及之前的所有内容完全一致([5.3 Log replication](# 5.3 Log replication))
+- **Leader Completeness**（Leader 完整性）：若给定日志记录在某一个 Term 中已经被提交（后续会解释何为“提交”），那么后续所有 Term 的 Leader 都将包含该日志记录
+- **State Machine Safety**（状态机安全性）：如果一个服务器在给定 index 值处将某个日志记录应用于其上层状态机，那么其他服务器在该 index 值处都只会应用相同的日志记录
+
+### Raft结构描述
 
 #### state in server
 
@@ -56,7 +68,7 @@ Raft的特点之一--对同步中的问题的分解(decomposes the consensus pro
 **Leader** 才会持有的**易失性状态**信息（会在每次选举完成后初始化）：
 
 - `nextIndex[]`: 每个节点即将为其发送的下一个日志记录的 index（初值均为 Leader 最新日志记录 index 值 + 1）
-- `matchIndex[]`: 每个节点上已备份的最后一条日志记录的 index（初值均为 `0`
+- `matchIndex[]`: 每个节点上已备份的最后一条日志记录的 index（初值均为 `0`）
 
 
 
@@ -212,3 +224,107 @@ election流程：
 
 - 随机选择election timeout的时长, 防止扎堆(random到的时间短的candidate, 它会抢先获取到vote)
 
+### 5.3 Log replication
+
+**Log Entry的产生**: client发送请求(含有一个命令command), Leader将这个命令作为一个新entry加入到log
+
+**Log Entry结构**: 
+
+- 一个会在状态机上执行的命令
+- Entry在Log中的Index
+- 所属的Term ID
+
+#### **replication流程**
+
+- Leader并行发送`AppendEntries RPCs`到server, 进行log entry 的 replicate
+- 当**安全地**完成replicate, leader将这个entry记录(apply to state machine), 并响应结果给client
+  - 如果出现问题( follower crash or run slowly ; 网络故障→数据包丢失), Leader会**无限制**重发RPC, 直到所有follower完成log entry的store
+
+
+
+Leader什么时候记录 Log Entry (称之为 ***committed entry***)?
+
+- 当Leader在大多数server上完成了log replicate, 就会**提交**log entry (复读)
+  - 这个提交操作也会提交Leader的Log中的之前的Log Entries(还包括其他Leader创建的Entries)
+- 当Follower得知Log Entries提交, 就会按顺序执行这些Entries(原文: applies the entry to its local state machine)
+
+#### Log Matching
+
+> **Log Matching**（日志匹配）：若两份日志在给定 Term 及给定 index 值处有相同的记录，那么两份日志在该位置及**之前的所有内容**完全一致
+
+通过下面两个性质实现Log Matching: 
+
+1. 对于两份日志中给定的 index 处，如果该处两个日志记录的 Term ID 相同，那么它们存储的状态机命令相同
+2. 如果两份日志中给定 index 处的日志记录有相同的 Term ID 值，那么位于它们之前的日志记录完全相同
+
+对于性质1: Leader在一个Term中只会在一个index上创建一个Log Entry, 并且Log Entry的位置不会改变; 所以两份日志中, index相同&Term ID相同, 则command相同
+
+对于性质2: 需要额外保证之前的Log Entries相同
+
+- `AppendEntries RPC`中的`prevLogIndex`和`prevLogTerm`参数, 表示本次Append的Entries的前一个日志记录的Index和Term ID
+- Follower会根据上面的参数, 检查自身的Log中是否有相同的Entry(通过性质1)
+  - 如果没有找到, 就拒绝这次AppendEntries请求
+
+#### Log不一致情况
+
+replicate的过程中, Leader可能会出故障, 所以会导致Leader的日志可能会与Follower不一致, follower的Log可能出现下图的情况
+
+- 注: 图中的数字是Entry的Term ID
+
+![image-20241002173322634](./Raft.assets/image-20241002173322634.png)
+
+- a, b: 日志缺失
+- c, d: 包含部分未提交日志 (因为Leader还未确认)
+- e, f: 两种情况兼有
+
+#### Follower不一致处理方式
+
+对于不一致的 Follower 日志，Raft 会强制要求 Follower 与 Leader 的日志保持一致。
+
+对于两个不一致的Log(Leader和一个Follower), Leader会找到**最后一条**还保持一致的Log Entry, 删除Follower的后续的Entries, 然后replicate自身的Log到这个Follower上
+
+**具体实现方式**: 
+
+1. Leader 会为每个 Follower 维持一个 `nextIndex` 变量（`nextIndex[]`），代表 Leader 即将通过 AppendEntries RPC 调用发往该 Follower 的日志的 index 值
+2. 在刚刚被选举为一个 Leader 时，Leader 会将每个 Follower 的 `nextIndex` 置为其所保存的最新日志记录的 index 之后
+3. 当有 Follower 的日志与 Leader 不一致时，Leader 的 AppendEntries RPC 调用会失败，Leader 便对该 Follower 的 `nextIndex` 值**减 1 并重试**，直到 AppendEntries 成功
+   - 所以用-1&不断重传去找到正确的`nextIndex`, 效率如何?
+4. Follower 接收到合法的 AppendEntries 后，便会**移除**其在该位置上及以后存储的日志记录，并追加上新的日志记录
+5. 如此，在 AppendEntries 调用成功后，Follower 便会在该 Term 接下来的时间里与 Leader 保持一致
+
+**一个优化思路**：
+
+- 在AppendEntries RPC的拒绝中添加冲突的term以及该term的第一个index，可以让Leader直接修改nextIndex
+- 只需要一次RPC就能确定冲突的Log Entry，不需要多次重发RPC
+- 但在实践中，这样的优化并不必要，日志不一致的情况发生不频繁，且冲突的Entries数量往往有限
+
+### 5.4 Safety
+
+就上述所提及的 Leader 选举及日志备份规则，实际上是不足以确保所有状态机都能按照相同的顺序执行相同的命令的。
+
+- 例如，在集群运行的过程中，某个 Follower 可能会失效，而 Leader 继续在集群中提交日志记录；当这个 Follower 恢复后，有可能会被选举为 Leader，而它实际上缺少了一些已经提交的日志记录。
+
+
+
+### 5.4.1 Leader 选举约束
+
+其他的基于 Leader 架构的共识算法都会保证 Leader **最终**会持有所有已提交的日志记录。而这种机制实际上会为算法引入额外的复杂度。
+
+- 一些算法（如 Viewstamped Replication）允许节点在不持有所有已提交日志记录的情况下被选举为 Leader，并通过其他机制将缺失的日志记录发送至新 Leader。
+
+- 为了简化算法，Raft 限制了Log Entries只会从 Leader 流向 Follower，同时 Leader 绝不会覆写它所保存的日志。
+
+在这样的前提下，要提供相同的保证，Raft 就需要**限制**哪些 Candidate 可以成为 Leader。
+
+- 前面提到，Candidate 为了成为 Leader 需要获得集群内**大多数节点的选票**，而一个日志记录被提交（committed entry）同样要求它已经被备份到集群内的大多数节点上。
+- 那么如果一个 Candidate 能够成为 Leader，投票给它的节点中必然存在节点保存有所有已提交的日志记录。
+
+限制方式：`RequestVote RPC`参数`lastLogIndex`和`lastLogTerm`
+
+- Candidate 在发送 RequestVote RPC 调用进行拉票时，它还会附带上自己的日志中最后一条记录的 index 值和 Term ID 值：其他节点在接收到后会与自己的日志进行比较，如果发现对方的日志落后于自己的日志（首先由 Term ID 决定大小，在 Term ID 相同时由 index 决定大小），就会拒绝这次 RPC 调用。如此一来，Raft 就能确保被选举为 Leader 的节点必然包含所有已经提交的日志。
+
+#### 5.4.2 来自旧Term的Entries
+
+> ***committed entry***: Log Entry成功replicate到大部分节点上后, 该entry被认为是committed的
+
+如果 Leader 在日志记录replicate至大多数节点之前就崩溃了，**后续的 Leader** 会尝试继续replicate该日志。然而，此时的 Leader 即使在将该日志备份至大多数节点上后，都无法立刻得出该日志已提交的结论。4
