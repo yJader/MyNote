@@ -27,19 +27,19 @@
 
 Leader的职责
 
-- 从Client接收Log Entries(客户端操作)，在其他servers上复制它们
-- 告诉servers何时可以安全地将log entries应用于其状态机
+- 从Client接收日志条目(客户端操作)，在其他servers上复制它们
+- 告诉servers何时可以安全地将日志条目应用于其状态机
 
 由Leader管理的好处: 
 
-- 不需要经过讨论来决定放置log entries的位置
+- 不需要经过讨论来决定放置***日志条目(Log Entry)***的位置
 - 数据传输方向简单(Leader→servers)
 
 Raft的特点之一--对同步中的问题的分解(decomposes the consensus problem)
 
 1. **Leader election**: 一个Leader挂掉时, 需要选举出新Leader (具体实现-Section 5.2)
-2. **Log replication**:  Leader从Client接受Log Entries, 并将它复制给集群(其他日志会与Leader的保持一致)
-3. **Safety**: 关键在于“状态机安全属性”（State Machine Safety Property）, 这个属性保证了: 如果一个server应用了一个log entry, 其他server不会将其他命令应用到同一个log (具体实现-Section 5.4)
+2. **Log replication**:  Leader从Client接受日志条目, 并将它复制给集群(其他日志会与Leader的保持一致)
+3. **Safety**: 关键在于“状态机安全属性”（State Machine Safety Property）, 这个属性保证了: 如果一个server应用了一个日志条目, 其他server不会将其他命令应用到同一个log (具体实现-Section 5.4)
    - 理想情况下，每个entry对应一个唯一的命令，但是由于分布式系统中可能出现的故障（如领导者更换、网络分区等），可能会导致在某些情况下，同一个索引位置上的entry被尝试赋予不同的命令
 
 ### Raft特性
@@ -62,8 +62,8 @@ Raft的特点之一--对同步中的问题的分解(decomposes the consensus pro
 
 **所有节点**都会持有的**易失性状态**信息：
 
--  `commitIndex`: 最后一个已提交日志记录的 index（初值为 `0`）
--  `lastApplied`: 最后一个已应用至上层状态机的日志记录的 index（初值为 `0`）
+-  `commitIndex`: 最后一个**已提交**日志记录的 index（初值为 `0`）
+-  `lastApplied`: 最后一个**已应用**至上层状态机的日志记录的 index（初值为 `0`）
 
 **Leader** 才会持有的**易失性状态**信息（会在每次选举完成后初始化）：
 
@@ -99,7 +99,7 @@ Raft的特点之一--对同步中的问题的分解(decomposes the consensus pro
 
 一些其他注意事项: 
 
-- 该RPC用作心跳时, 参数中不携带log entries
+- 该RPC用作心跳时, 参数中不携带日志条目
 
 #### `RequestVote RPC`
 
@@ -205,7 +205,7 @@ term的作用--通过比较`currentTerm`
 
 election触发时机: 
 
-- Leader通过向Follower发送无Log Entries的AppendEntries RPCs实现heartbeats
+- Leader通过向Follower发送无日志条目的AppendEntries RPCs实现heartbeats
 - Follower一段时间（***election timeout***）后还没有收到Leader的Heartbeat，就开始选举
 
 election流程： 
@@ -226,9 +226,9 @@ election流程：
 
 ### 5.3 Log replication
 
-**Log Entry的产生**: client发送请求(含有一个命令command), Leader将这个命令作为一个新entry加入到log
+**日志条目的产生**: client发送请求(含有一个命令command), Leader将这个命令作为一个新entry加入到log
 
-**Log Entry结构**: 
+**日志条目结构**: 
 
 - 一个会在状态机上执行的命令
 - Entry在Log中的Index
@@ -236,30 +236,30 @@ election流程：
 
 #### **replication流程**
 
-- Leader并行发送`AppendEntries RPCs`到server, 进行log entry 的 replicate
+- Leader并行发送`AppendEntries RPCs`到server, 进行日志条目 的 replicate
 - 当**安全地**完成replicate, leader将这个entry记录(apply to state machine), 并响应结果给client
-  - 如果出现问题( follower crash or run slowly ; 网络故障→数据包丢失), Leader会**无限制**重发RPC, 直到所有follower完成log entry的store
+  - 如果出现问题( follower crash or run slowly ; 网络故障→数据包丢失), Leader会**无限制**重发RPC, 直到所有follower完成日志条目的store
 
 
 
-Leader什么时候记录 Log Entry (称之为 ***committed entry***)?
+Leader什么时候记录日志条目 (称之为 ***committed entry***)?
 
-- 当Leader在大多数server上完成了log replicate, 就会**提交**log entry (复读)
-  - 这个提交操作也会提交Leader的Log中的之前的Log Entries(还包括其他Leader创建的Entries)
-- 当Follower得知Log Entries提交, 就会按顺序执行这些Entries(原文: applies the entry to its local state machine)
+- 当Leader在大多数server上完成了log replicate, 就会**提交**日志条目 (复读)
+  - 这个提交操作也会提交Leader的Log中的之前的日志条目(还包括其他Leader创建的Entries)
+- 当Follower得知日志条目提交, 就会按顺序执行这些Entries(原文: applies the entry to its local state machine)
 
-#### Log Matching
+#### Log Matching Property
 
-> **Log Matching**（日志匹配）：若两份日志在给定 Term 及给定 index 值处有相同的记录，那么两份日志在该位置及**之前的所有内容**完全一致
+***Log Matching***（日志匹配）：若两份日志在给定 Term 及给定 index 值处有相同的记录，那么两份日志在该位置及**之前的所有内容**完全一致
 
 通过下面两个性质实现Log Matching: 
 
 1. 对于两份日志中给定的 index 处，如果该处两个日志记录的 Term ID 相同，那么它们存储的状态机命令相同
 2. 如果两份日志中给定 index 处的日志记录有相同的 Term ID 值，那么位于它们之前的日志记录完全相同
 
-对于性质1: Leader在一个Term中只会在一个index上创建一个Log Entry, 并且Log Entry的位置不会改变; 所以两份日志中, index相同&Term ID相同, 则command相同
+对于性质1: Leader在一个Term中只会在一个index上创建一个日志条目, 并且日志条目的位置不会改变; 所以两份日志中, index相同&Term ID相同, 则command相同
 
-对于性质2: 需要额外保证之前的Log Entries相同
+对于性质2: 需要额外保证之前的日志条目相同
 
 - `AppendEntries RPC`中的`prevLogIndex`和`prevLogTerm`参数, 表示本次Append的Entries的前一个日志记录的Index和Term ID
 - Follower会根据上面的参数, 检查自身的Log中是否有相同的Entry(通过性质1)
@@ -281,38 +281,38 @@ replicate的过程中, Leader可能会出故障, 所以会导致Leader的日志�
 
 对于不一致的 Follower 日志，Raft 会强制要求 Follower 与 Leader 的日志保持一致。
 
-对于两个不一致的Log(Leader和一个Follower), Leader会找到**最后一条**还保持一致的Log Entry, 删除Follower的后续的Entries, 然后replicate自身的Log到这个Follower上
+对于两个不一致的Log(Leader和一个Follower), Leader会①**找到最后一条**还保持一致的日志条目, ②**删除**Follower的后续的Entries, 然后③replicate自身的Log到这个Follower上
 
 **具体实现方式**: 
 
 1. Leader 会为每个 Follower 维持一个 `nextIndex` 变量（`nextIndex[]`），代表 Leader 即将通过 AppendEntries RPC 调用发往该 Follower 的日志的 index 值
 2. 在刚刚被选举为一个 Leader 时，Leader 会将每个 Follower 的 `nextIndex` 置为其所保存的最新日志记录的 index 之后
 3. 当有 Follower 的日志与 Leader 不一致时，Leader 的 AppendEntries RPC 调用会失败，Leader 便对该 Follower 的 `nextIndex` 值**减 1 并重试**，直到 AppendEntries 成功
-   - 所以用-1&不断重传去找到正确的`nextIndex`, 效率如何?
+   - 所以用-1&不断重传去找到正确的`nextIndex`, 效率如何? 同下优化所示, 日志不一致发生不频繁, 简单的实现足以
 4. Follower 接收到合法的 AppendEntries 后，便会**移除**其在该位置上及以后存储的日志记录，并追加上新的日志记录
 5. 如此，在 AppendEntries 调用成功后，Follower 便会在该 Term 接下来的时间里与 Leader 保持一致
 
 **一个优化思路**：
 
 - 在AppendEntries RPC的拒绝中添加冲突的term以及该term的第一个index，可以让Leader直接修改nextIndex
-- 只需要一次RPC就能确定冲突的Log Entry，不需要多次重发RPC
-- 但在实践中，这样的优化并不必要，日志不一致的情况发生不频繁，且冲突的Entries数量往往有限
+- 只需要一次RPC就能确定冲突的日志条目，不需要多次重发RPC
+- 但在实践中，这样的**优化并不必要**，日志不一致的情况发生不频繁，且冲突的Entries数量往往有限
 
 ### 5.4 Safety
 
-就上述所提及的 Leader 选举及日志备份规则，实际上是不足以确保所有状态机都能按照相同的顺序执行相同的命令的。
+就上述所提及的 Leader 选举及日志备份规则，实际上是不足以确保所有状态机都能按照相同的顺序执行相同的命令的(即不够安全)。
 
 - 例如，在集群运行的过程中，某个 Follower 可能会失效，而 Leader 继续在集群中提交日志记录；当这个 Follower 恢复后，有可能会被选举为 Leader，而它实际上缺少了一些已经提交的日志记录。
 
 
 
-### 5.4.1 Leader 选举约束
+#### 5.4.1 Leader 选举约束
 
 其他的基于 Leader 架构的共识算法都会保证 Leader **最终**会持有所有已提交的日志记录。而这种机制实际上会为算法引入额外的复杂度。
 
 - 一些算法（如 Viewstamped Replication）允许节点在不持有所有已提交日志记录的情况下被选举为 Leader，并通过其他机制将缺失的日志记录发送至新 Leader。
 
-- 为了简化算法，Raft 限制了Log Entries只会从 Leader 流向 Follower，同时 Leader 绝不会覆写它所保存的日志。
+- 为了简化算法，Raft 限制了日志条目只会从 Leader 流向 Follower，同时 Leader 绝不会覆写它所保存的日志。
 
 在这样的前提下，要提供相同的保证，Raft 就需要**限制**哪些 Candidate 可以成为 Leader。
 
@@ -323,8 +323,107 @@ replicate的过程中, Leader可能会出故障, 所以会导致Leader的日志�
 
 - Candidate 在发送 RequestVote RPC 调用进行拉票时，它还会附带上自己的日志中最后一条记录的 index 值和 Term ID 值：其他节点在接收到后会与自己的日志进行比较，如果发现对方的日志落后于自己的日志（首先由 Term ID 决定大小，在 Term ID 相同时由 index 决定大小），就会拒绝这次 RPC 调用。如此一来，Raft 就能确保被选举为 Leader 的节点必然包含所有已经提交的日志。
 
-#### 5.4.2 来自旧Term的Entries
+#### 5.4.2 来自旧Term的日志条目
 
-> ***committed entry***: Log Entry成功replicate到大部分节点上后, 该entry被认为是committed的
+> ***committed entry***: 日志条目成功replicate到大部分节点上后, 该entry被认为是committed的
 
-如果 Leader 在日志记录replicate至大多数节点之前就崩溃了，**后续的 Leader** 会尝试继续replicate该日志。然而，此时的 Leader 即使在将该日志备份至大多数节点上后，都无法立刻得出该日志已提交的结论。4
+如果 Leader 在日志记录replicate至大多数节点之前就崩溃了，**后续的 Leader** 会尝试继续replicate该日志。
+
+然而，此时的 Leader 即使在将该日志备份至大多数节点上后，都**无法**立刻得出该日志已提交的结论。因为就像下面的例子中展示的这样, 旧Term的日志记录会被新Leader覆盖(即使这个旧记录已经被备份到了多个节点上)
+
+##### 旧Term例子(Figure 8)
+
+![QQ_1728477747496](Raft.assets/Figure8.png)
+
+> 时间点: a, b, c, d, e
+>
+> 加粗黑框代表此时该Server为Leader
+>
+> *这个例子看了半天QAQ*
+
+**(a) S1 是 Leader，部分复制了日志条目：**
+
+- 在**时间点 (a)**，S1 是Leader，当前任期是**Term=2**。S1 开始在 `index=2` 处写入一个日志条目 `(TermID=2, index=2)`，并成功将该日志条目复制到了部分节点（例如S2）。
+- 但由于还没有复制到大多数节点，该条目尚未提交。
+
+**(b) S1 崩溃，S5 成为新Leader：**
+
+- 在**时间点 (b)**，S1 崩溃了，新的Leader选举开始。此时，**S5被选举为Leader**，进入了**Term=3**。S5获得了S3、S4和自己的投票。
+- S5在 `index=2` 处写入了一个新的日志条目 `(TermID=3, index=2)`，该条目覆盖了之前S1的日志条目 `(TermID=2, index=2)`(index冲突)。
+
+**(c) S5 崩溃，S1 重新成为Leader：**
+
+- 在**时间点 (c)**，S5崩溃，S1重新启动并在选举中再次成为Leader（进入**Term=4**）。
+- 此时，S1继续将它在Term=2的日志条目 `(TermID=2, index=2)` 复制到其他节点，并成功将该条目复制到了大多数节点（例如S2、S3等）。
+- 然而，**该条目仍然没有被标记为已提交**，因为它来自旧的任期（Term=2），不能仅通过复制来判断是否提交。
+
+**(d) 如果 S1 再次崩溃，S5 再次当选Leader：**
+
+- 在**时间点 (d)**，如果S1再次崩溃，新的选举将开始，**S5再次有可能当选为Leader**，因为S5的日志比S1的Term号更高（S5在Term=3有新的日志条目）。
+- 如果S5当选，它会使用自己的日志条目 `(TermID=3, index=2)` 覆盖之前S1在Term=2的日志条目。这样，S1原本在Term=2复制的日志将被S5覆盖。
+
+**(e) 如果 S1 提交了当前Term的日志条目：**
+
+- 在**时间点 (e)**，如果S1在崩溃之前，成功将**当前任期（Term=4）**的一个新的日志条目（例如`(TermID=4, index=3)`）复制到大多数节点，并将其提交，那么之前所有未提交的日志条目，包括 `(TermID=2, index=2)`，都可以***间接提交***。
+- 此时，S5将无法再成为Leader，因为它的日志不完整（缺少Term=4的日志条目）。Raft的**Leader完整性原则**（Leader Completeness Property）规定，当前Term中成功提交的日志条目，必须在所有未来的Leader中存在，因此S5无法获得足够的投票成为Leader。
+
+##### ***间接提交***
+
+> Raft never commits log entries from previous terms by counting replicas; only log entries from the current term are committed by counting replicas. Once an entry from the current term has been committed in this way, then all prior entries **are committed indirectly** because of the **Log Matching Property**.
+>
+> Raft不会通过计数副本来提交旧任期的日志条目；只有**当前任期**的日志条目才能通过计数副本提交。一旦当前任期的一个日志条目通过这种方式提交，那么之前的所有日志条目（包括旧任期的条目）也会通过日志匹配属性间接提交。
+
+像Figure8中展示的S1和S5在index=2上写入了不同的日志条目(S1 Terrm=2的`EntryA`, S5 Term=3的`EntryB`), S5作为Term=3的Leader有权利用B覆盖A。
+
+所以就算后来S1重新成为Leader(进入到Term=4), 也不能贸然将Term=2的EntryB直接commit, 必须等当前任期的`EntryC`(Term = 4)通过正常的**统计replicate次数**完成commit时, 才能借由**Log Matching性质**, **间接**确认`EntryA`完成提交
+
+上面提到的, 针对旧Term的日志记录的特殊处理方式, 即为***间接提交***
+
+#### 5.4.3 Safety argument
+
+##### **Leader Completeness Property（Leader完整性属性）**
+
+- **定义**：Leader完整性属性规定，如果某个日志条目在任期`T`中被提交（committed），那么该日志条目将会存在于任期`T`及所有更高任期的领导者日志中。
+- **意义**：这保证了日志条目一旦被提交，它就不会被未来的Leader覆盖或丢失。
+
+- 证明过程：反证法 略
+
+##### **State Machine Safety（状态机安全性）**
+
+- **状态机安全性属性**：基于Leader完整性属性，Raft进一步证明了**状态机安全性**，即如果某个节点已经在某个日志索引处将日志条目应用到了状态机，那么不会有其他节点在相同的索引处应用不同的日志条目。这保证了所有节点的状态机应用的是一致的命令序列。
+
+### 5.5 Follower 和 Candidate crashes
+
+> 之前我们讨论都是 Leader failure
+
+对于 Candidate 和 Follower 而言，它们分别是 `RequestVote` 和 `AppendEntries` RPC 调用的接收方：
+
+- 当 Candidate 或 Follower 崩溃后，RPC 调用会失败；
+- Raft 在RPC 失败时会不断重试 RPC，直至 RPC 成功；
+- RPC 调用的过程也有可能已经完成，但接收方在响应前也有可能crash，因此之后会收到重复的RPC调用
+
+为此 Raft 保证 RPC 的**幂等性**，在节点重启后收到重复的 RPC 调用也不会有所影响（会选择忽略该请求）。
+
+### 5.6 Timing and availability
+
+> Raft的安全性保证并不依赖于事件发生的时间(而是取决于term)
+
+但为了提供合理的可用性，集群仍需满足一定的时间要求，具体如下：
+$$
+broadcastTime≪electionTimeout≪MTBF
+$$
+- $broadcastTime$ ：一个节点并发地发送 RPC 请求至集群中其他节点并接收请求的平均耗时
+- $electionTimeout$：节点的选举超时时间
+  - 为了避免扎堆求票导致的选票分散，这个时间会随机选取 （[5.2 Leader election](# 5.2 Leader election)）
+- $MTBF$ ：单个节点每次失效的平均间隔时间（Mean Time Between Failures）
+
+上述的不等式要求:
+
+- $broadcastTime$ 要小于 $electionTimeout$ 一个数量级，以确保正常 Leader 心跳间隔不会导致 Follower 超时并发起选举；
+  同时考虑到 $electionTimeout$ 会随机选出，该不等式还能确保 Leader 选举时平局局面不会频繁出现。
+
+- $electionTimeout$ 也应比 $MTBF$ 小几个数量级，考虑到系统会在 Leader 失效时停止服务，而这样的情况不应当频繁出现。
+
+在这个不等式中，$broadcastTime$ 及 $MTBF$ 由集群架构所决定，$electionTimeout$ 则可由运维人员自行配置(且配置的是一个随机范围)。
+
+## 6 集群成员变更
