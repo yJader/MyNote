@@ -65,20 +65,26 @@ sudo systemctl enable ssh
 
 #### ssh密钥登录
 
-1. 生成SSH密钥对(客户机和服务器都需要)
+1. 生成SSH密钥对(client和server都需要)
+
+   - client: 本地正在尝试访问远程机的这台机器
+      server: 正在尝试访问的远程机(ssh意义上的server)
+
+   - 二编: server真的需要吗?
+
 
    ```bash
    sudo ssh-keygen
    ```
 
-2. 将客户机生成的公钥(默认位于`/user/username/.ssh/id_rsa.pub`文件夹内) 拷贝到服务器的`/home/.ssh`(也可能在`/home/your_username/.ssh`)中
+2. 将client生成的公钥(默认位于`/user/username/.ssh/id_rsa.pub`文件夹内) 拷贝到server的`/home/.ssh/authorized_keys`(也可能在`/home/your_username/.ssh/authorized_keys`)中
 
    ```shell
-    ssh-copy-id -i ~/.ssh/id_rsa.pub {username}@{server_ip}
+    ssh-copy-id -i ~/.ssh/id_rsa.pub {username}@{server_ip} # linux系统, 有ssh-copy-id工具
     wsl ssh-copy-id -i /mnt/c/Users/14258/.ssh/id_rsa.pub {username}@{server_ip} # 在windows环境下
    ```
 
-   
+   - 如果命令不顺利, 也可以手动创建这个`authorized_keys`文件, 然后粘贴client的公钥到`authorized_keys`中
 
 ### 编译工具链
 
@@ -92,11 +98,13 @@ sudo apt install build-essential
 sudo apt install net-tools
 ```
 
+## 命令行工具
 
+### Starship
 
-## ZSH终端
+### ZSH
 
-### 安装 Zsh
+#### 安装 Zsh
 
 ```bash
 # 安装 Zsh
@@ -106,7 +114,7 @@ sudo apt install zsh
 chsh -s /bin/zsh
 ```
 
-### 安装 Oh My Zsh框架
+#### 安装 Oh My Zsh框架
 
 ```bash
 # 安装 Oh My Zsh
@@ -121,7 +129,7 @@ bash ./install.sh
 
 
 
-### 安装Powerlevel10k 主题
+#### ### 安装Powerlevel10k 主题
 
 ```shell
 git clone --depth=1 https://gitee.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k
@@ -133,11 +141,11 @@ vim ~/.zshrc
   - 想要重新配置, 删除`~/.p10k.zsh`
   - 或者 `p10k configure`
 
-### 抄来的插件配置
+#### 抄来的插件配置
 
 > [常用的oh-my-zsh插件 - 知乎 (zhihu.com)](https://zhuanlan.zhihu.com/p/61447507) 选了一些个人常用的
 
-#### zsh-autosuggestions
+##### zsh-autosuggestions
 
 [官网](https://link.zhihu.com/?target=https%3A//github.com/zsh-users/zsh-autosuggestions)，非常好用的一个插件，会记录你之前输入过的所有命令，并且自动匹配你可能想要输入命令，然后按→补全
 
@@ -147,7 +155,7 @@ vim ~/.zshrc
 git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
 ```
 
-#### zsh-syntax-highlighting
+##### zsh-syntax-highlighting
 
 [官网](https://link.zhihu.com/?target=https%3A//github.com/zsh-users/zsh-syntax-highlighting)，命令太多，有时候记不住，等输入完了才知道命令输错了，这个插件直接在输入过程中就会提示你，当前命令是否正确，错误红色，正确绿色
 
@@ -155,17 +163,45 @@ git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-m
 git clone https://github.com/zsh-users/zsh-syntax-highlighting ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
 ```
 
-#### sudo
+##### sudo
 
 直接在插件列表中添加, 无需下载
 
-#### 启用
+##### 启用插件
 
 `vim ~/.zshrc` 查找 `plugins` 在括号中添加插件列表
 
 ```
 sudo zsh-autosuggestions zsh-syntax-highlighting
 ```
+
+#### 备份配置
+
+用git来同步zsh的配置
+
+初始化
+
+```shell
+mkdir dotfiles                                                                                           
+cd dotfiles
+git init
+cp ~/.zshrc .
+cp ~/.zprofile .
+cp ~/.zlogin .
+cp ~/.zlogout .
+cp ~/.zpreztorc .
+git add .
+git commit -m "Initial commit of dotfiles"
+```
+
+同步配置
+
+```
+cd ~/.dotfiles
+ln -s ~/.dotfiles/.zshrc ~/.zshrc
+```
+
+
 
 ## Docker
 

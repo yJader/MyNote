@@ -1150,7 +1150,7 @@ hello world! hello git!
 ```shell
 git rm -r --cached . 
 git add .
-git commit -m "message"
+git commit -m "update and enable .gitignore"
 ```
 
 
