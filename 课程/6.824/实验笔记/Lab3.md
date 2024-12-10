@@ -1,6 +1,7 @@
 # Lab 3: Raft
+## 实验文档
 
-## Introduction
+### Introduction
 
 这是构建容错键/值存储系统的一系列实验室作业中的第一个。在这个实验室作业中，您将实现Raft，一种复制状态机协议。在下一个实验室作业中，您将在Raft的基础上构建一个键/值服务。然后，您将把服务“分片”到多个复制状态机上，以提高性能。
 
@@ -14,7 +15,7 @@ Raft将客户端请求组织成一个序列，称为日志，并确保所有副�
 
 这个实验室作业分为四个部分完成。您必须在对应的截止日期前提交每一部分。
 
-## Start
+### Start
 
 如果您已经完成了实验室作业1，那么您已经有了实验室源代码的副本。如果没有，您可以参照实验室作业1中的指示，通过git获取源代码。
 
@@ -44,7 +45,7 @@ Test (3A): election after network failure ...
 ...
 ```
 
-## The Code 代码实现
+### The Code 代码实现
 
 通过向 `raft/raft.go` 添加代码来实现Raft。在这个文件中，您会找到骨架代码，以及如何发送和接收RPC的示例。
 
@@ -76,13 +77,13 @@ type ApplyMsg
 
 后续的实验室作业将在此基础上进行构建，因此重要的是要给自己足够的时间来编写坚实的代码。
 
-## Part 3A: leader election
+### Part 3A: leader election
 
-### 3A Task
+#### 3A Task
 
 为了实现Raft中的Leader选举和心跳（使用不含日志条目的AppendEntries RPCs），你需要完成以下几个步骤。在Part 3A中的目标是选举出一个Leader，并且在没有故障的情况下，该Leader能够持续担任Leader；而在旧Leader失败或与旧Leader之间的数据包丢失时，新的Leader能够接管。
 
-### 3A Tips
+#### 3A Tips
 
 - 您不能直接运行您的Raft实现；相反，您应该通过测试程序来运行它，即使用 `go test -run 3A`。
 - 遵循论文中的图2。在这个阶段，您关心的是发送和接收RequestVote RPCs、与选举相关的服务器规则以及与Leader选举相关的状态。
@@ -119,9 +120,59 @@ $
 
 在评估您的提交时，我们将不会使用 `-race` 标志来运行测试。然而，您应该确保您的代码始终能够通过带有 `-race` 标志的测试。这样可以确保您的代码没有竞争条件，并且在多线程环境下也能正确运行。
 
-### 3A实现记录
 
-#### RequestVote
+#### 测试结果
+
+使用助教提供的[dtest.py](https://gist.github.com/JJGO/0d73540ef7cc2f066cb535156b7cbdab)进行1600轮测试, 通过
+
+![alt text](Lab3.assets/QQ_1729511738286.png)
+
+### Part 3B: log
+
+#### 3B Task
+
+实现Log Entries的复制和提交。在Part 3B中的目标是确保所有节点的日志条目保持一致，并且在提交日志条目时，确保它们按正确的顺序提交。
+
+#### 3B Tips
+
+- 运行 git pull 以获取最新的实验版本。
+- 你的首要目标应该是通过 TestBasicAgree3B() 测试。首先实现 Start() 方法，然后编写代码通过 AppendEntries RPC 发送和接收新的日志条目，遵循图 2 的说明。在每个节点上，将每个新提交的条目发送到 applyCh。
+- 你需要实现选举限制（论文中的第 5.4.1 节）。
+- 你的代码中可能存在重复检查特定事件的循环。不要让这些循环在没有暂停的情况下连续执行，因为这会降低你的实现速度，导致测试失败。使用 Go 的条件变量，或者在每次循环迭代中插入 time.Sleep(10 * time.Millisecond)。
+- 为了以后实验的方便，编写（或重写）清晰明了的代码。有关想法，请重新访问我们的[指导页面](https://pdos.csail.mit.edu/6.824/labs/guidance.html)，上面有关于如何开发和调试代码的提示。
+- 如果测试失败，请查看 test_test.go 和 config.go 来了解正在测试的内容。config.go 还说明了测试器如何使用 Raft API。
+
+
+### Part 3C: persistence
+
+如果基于 Raft 的服务器重启，它应该从上次离开的地方恢复服务。这要求 Raft 保持能够在重启后存活的状态。论文中的图 2 提到了哪些状态应该是持久的。
+
+一个真实的实现会在每次 Raft 的持久状态变化时将其写入磁盘，并在重启后重新启动时从磁盘读取状态。你的实现不会使用磁盘；相反，它将从一个 Persister 对象（参见 persister.go）保存和恢复持久状态。无论谁调用 Raft.Make()，都会提供一个最初持有 Raft 最近持久化状态的 Persister（如果有的话）。Raft 应该从该 Persister 初始化其状态，并且应该在每次状态变化时使用它来保存其持久状态。使用 Persister 的 ReadRaftState() 和 Save() 方法。
+
+#### 3C Task
+
+在 raft.go 中完成 persist() 和 readPersist() 函数，通过添加代码来保存和恢复持久状态。您需要将状态编码（或“序列化”）为一个字节数组，以便将其传递给 Persister。使用 labgob 编码器；请参阅 persist() 和 readPersist() 中的注释。labgob 类似于 Go 的 gob 编码器，但如果您尝试编码带有小写字段名的结构体，它会打印错误消息。现在，将 nil 作为第二个参数传递给 persister.Save()。在您的实现更改持久状态的地方插入对 persist() 的调用。完成这些后，如果您的其他实现正确，您应该能够通过所有 3C 测试。
+
+您可能需要优化，以便一次性备份多个 nextIndex 条目。请查看扩展 Raft 论文，从第 7 页底部和第 8 页顶部（灰色线条标记）开始阅读。
+论文对细节描述得不够明确；您需要补充这些空白。
+一种可能的做法是在拒绝消息中包含以下内容：
+
+- XTerm：冲突条目中的任期（如果有的话）
+- XIndex：具有该任期的第一个条目的索引（如果有的话）
+- XLen：日志长度
+
+然后，Leader的逻辑可以是如下：
+
+- case 1：Leader没有 XTerm：nextIndex = XIndex
+- case 2：Leader有 XTerm：nextIndex = Leader对于 XTerm 的最后一个条目
+- case 3：Follower的日志太短：nextIndex = XLen
+
+Tips: 3C 测试比 3A 或 3B 的测试要求更高，失败可能是由您在 3A 或 3B 代码中的问题引起的。
+
+
+## 3A实现记录
+
+### RequestVote
 
 > 接收方在接收到该 RPC 后会进行以下操作：
 >
@@ -141,7 +192,7 @@ $
 
 当`term == currentTerm`时, 我的实现方式如果 `votedFor == null`或 `votedFor == args.CandidateId`, 则直接投票给对方, 否则拒绝投票, 即一个term内只投给一个候选人
 
-##### 问题: 长时间离线的节点重新加入时, term异常高, 导致选举失败
+#### 问题: 长时间离线的节点重新加入时, term异常高, 导致选举失败
 
 **衍生问题A1**: 如果一个节点A因网络故障离线, 导致term很高(离线期间触发了很多次选举), 但是Log又很旧。在A重新上线后, 如果参与选举, 目前的更新方式会使得被A请求`RequestVote RPC`的节点的currentTerm更新得很高, 但是最终不会选取A为Leader(因为他的Log过时了), 如何解决这个问题?
 > 旧版-不够健壮的实现, 导致的不必要的思考
@@ -156,7 +207,7 @@ $
 
 **衍生问题A2**: 此外, 如何处理节点A, 使他最后能够加入集群正常工作? A的term很高, 所以会拒绝接受集群中的 具有更新的Log的Leader的`AppendEntries RPC`, 导致A继续发起选举, term接着增长, 最终是否会无法加入集群?
 
-###### 思路A: PerVote算法
+##### 思路A: PerVote算法
 
 > <https://blog.csdn.net/Ethan_199402/article/details/122704353>
 
@@ -178,20 +229,20 @@ PreVote算法解决了网络分区节点在重新加入时，会中断集群的�
 
 ---
 
-###### 思路B: 限制term增长速度
+##### 思路B: 限制term增长速度
 
 当多次选举失败后, 限制term的增长速度
 
 ---
 
-###### 思路C: Candidate转变为Follower
+##### 思路C: Candidate转变为Follower
 
 在RequestVoteReply中, 包含server的term, 可以将其利用起来, 当Candidate的term比server的term小时, 将自己转变为Follower, 并更新自己的currentTerm
 
 - 缺点: term可能会增长过快, 有没有溢出的风险
   - 解决方案: BC结合, 实现起来代码量不大 (TODO, 仅单独采用了C, 尚未结合B)
 
-##### Candidate等待RPC过久, 导致重新触发选举
+#### Candidate等待RPC过久, 导致重新触发选举
 
 情况描述: 目前的实现方式是并行给所有节点发送RequestVote RPC, 每个节点最多重发次数为3. 但是test中这样的发送时间会赶不上electionTimeoutTicker的时间, 导致Candidate等待RPC过久, 从而重新触发选举
 
@@ -219,7 +270,7 @@ test中模拟的情况: server会最高等待7000ms, 远大于electionTimeout
 
 **解决方案**: 如果收到足够的选票, 则直接转变为Leader, 不再等待RPC
 
-#### 心跳实现
+### 心跳实现
 
 raft论文中的心跳机制为: 当收到Leader心跳时, Follower重置选举超时时间
 
@@ -231,12 +282,12 @@ raft论文中的心跳机制为: 当收到Leader心跳时, Follower重置选举�
 - 对Follower: electionTimeoutTicker() goroutine中, 每隔一次ElectionTimeout, 检查在这期间是否收到过心跳, 如果没有, 则进行选举
 - 对Leader: 另开一个heartbeatTicker() goroutine, 每隔一次HEARTBEAT_INTERVAL发送心跳
 
-##### 发送心跳方式
+#### 发送心跳方式
 
 并行发送心跳, 并且不等待发送AppenEntries RPC的结果
 如果进行等待, 可能因为网络问题(这个在3A的测试范围内)导致等待时间过长, 从而导致心跳周期>选举超时时间
 
-###### 关于并发的Data Race问题
+##### 关于并发的Data Race问题
 
 问题背景: 心跳需要并行发送(通过在for中创建线程实现), 且主线程不等待发送线程
 情况描述:
@@ -246,7 +297,7 @@ raft论文中的心跳机制为: 当收到Leader心跳时, Follower重置选举�
 
 解决方案: 将构造请求在for中完成, 而非在线程中实现
 
-#### 并发bug(在3B中发现)
+### 并发bug(在3B中发现)
 
 **问题情况:**  
 
@@ -254,7 +305,7 @@ raft论文中的心跳机制为: 当收到Leader心跳时, Follower重置选举�
 2. startElection()选举需要获取锁, 但是此时锁被RequestVote RPC占用, 并且此时投票给其他Server
 3. RequestVote RPC返回, 但是startElection并没有校验term, 从而错误地发起一次选举
 
-#### 重复选举bug(在3C中发现)
+### 重复选举bug(在3C中发现)
 
 ```go
 func (rf *Raft) electionTimeoutTicker() {
@@ -301,41 +352,20 @@ func (rf *Raft) electionTimeoutTicker() {
 
 感想: 小坑好多, 没有完善的测试怎么发现QAQ
 
-### 测试结果
+## 3B 实现记录
 
-使用助教提供的[dtest.py](https://gist.github.com/JJGO/0d73540ef7cc2f066cb535156b7cbdab)进行1600轮测试, 通过
-
-![alt text](Lab3.assets/QQ_1729511738286.png)
-
-## Part 3B: log
-
-### 3B Task
-
-实现Log Entries的复制和提交。在Part 3B中的目标是确保所有节点的日志条目保持一致，并且在提交日志条目时，确保它们按正确的顺序提交。
-
-### 3B Tips
-
-- 运行 git pull 以获取最新的实验版本。
-- 你的首要目标应该是通过 TestBasicAgree3B() 测试。首先实现 Start() 方法，然后编写代码通过 AppendEntries RPC 发送和接收新的日志条目，遵循图 2 的说明。在每个节点上，将每个新提交的条目发送到 applyCh。
-- 你需要实现选举限制（论文中的第 5.4.1 节）。
-- 你的代码中可能存在重复检查特定事件的循环。不要让这些循环在没有暂停的情况下连续执行，因为这会降低你的实现速度，导致测试失败。使用 Go 的条件变量，或者在每次循环迭代中插入 time.Sleep(10 * time.Millisecond)。
-- 为了以后实验的方便，编写（或重写）清晰明了的代码。有关想法，请重新访问我们的[指导页面](https://pdos.csail.mit.edu/6.824/labs/guidance.html)，上面有关于如何开发和调试代码的提示。
-- 如果测试失败，请查看 test_test.go 和 config.go 来了解正在测试的内容。config.go 还说明了测试器如何使用 Raft API。
-
-### 3B 实现记录
-
-#### heartbeatTicker错误
+### heartbeatTicker错误
 >
 > 在3A中未检测出来
 > 原先逻辑为: 先发送心跳, 再检测自身是否为Leader, 如果不是, go heartbeatTicker()线程结束, 如果是, sleep HEARTBEAT_INTERVAL后再次发送心跳
 
 但是检测过慢, 如果sleep期间, 自身降级为Follower, 还会发出一次错误的心跳 (导致了一些看晕了的bug, 甚至开始怀疑RPC的正确性)
 
-#### 奇怪的DataRace
+### 奇怪的DataRace
 
 go的切片如果使用的是 args.entries = rf.log[i:j], 获取到的切片依然引用原始的底层数组, 这意味着如果在其他线程中修改/读了entries, 会导致DataRace
 
-#### 选举超时时间过短
+### 选举超时时间过短
 
 错误发生逻辑: (三个节点S0, S1, S2)
 
@@ -364,42 +394,17 @@ const (
 
 - 问题在于这两个函数之间, 被插入了一次心跳(将currentTerm更新为LeaderTerm), 但是startElection()之后会直接currentTerm++, 这时携带更高Term的RequestVote RPC会使得Leader降级, 影响集群稳定性
 
-## Part 3C: persistence
 
-如果基于 Raft 的服务器重启，它应该从上次离开的地方恢复服务。这要求 Raft 保持能够在重启后存活的状态。论文中的图 2 提到了哪些状态应该是持久的。
+## 3C 实现记录
 
-一个真实的实现会在每次 Raft 的持久状态变化时将其写入磁盘，并在重启后重新启动时从磁盘读取状态。你的实现不会使用磁盘；相反，它将从一个 Persister 对象（参见 persister.go）保存和恢复持久状态。无论谁调用 Raft.Make()，都会提供一个最初持有 Raft 最近持久化状态的 Persister（如果有的话）。Raft 应该从该 Persister 初始化其状态，并且应该在每次状态变化时使用它来保存其持久状态。使用 Persister 的 ReadRaftState() 和 Save() 方法。
-
-### 3C Task
-
-在 raft.go 中完成 persist() 和 readPersist() 函数，通过添加代码来保存和恢复持久状态。您需要将状态编码（或“序列化”）为一个字节数组，以便将其传递给 Persister。使用 labgob 编码器；请参阅 persist() 和 readPersist() 中的注释。labgob 类似于 Go 的 gob 编码器，但如果您尝试编码带有小写字段名的结构体，它会打印错误消息。现在，将 nil 作为第二个参数传递给 persister.Save()。在您的实现更改持久状态的地方插入对 persist() 的调用。完成这些后，如果您的其他实现正确，您应该能够通过所有 3C 测试。
-
-您可能需要优化，以便一次性备份多个 nextIndex 条目。请查看扩展 Raft 论文，从第 7 页底部和第 8 页顶部（灰色线条标记）开始阅读。
-论文对细节描述得不够明确；您需要补充这些空白。
-一种可能的做法是在拒绝消息中包含以下内容：
-
-- XTerm：冲突条目中的任期（如果有的话）
-- XIndex：具有该任期的第一个条目的索引（如果有的话）
-- XLen：日志长度
-
-然后，Leader的逻辑可以是如下：
-
-- case 1：Leader没有 XTerm：nextIndex = XIndex
-- case 2：Leader有 XTerm：nextIndex = Leader对于 XTerm 的最后一个条目
-- case 3：Follower的日志太短：nextIndex = XLen
-
-Tips: 3C 测试比 3A 或 3B 的测试要求更高，失败可能是由您在 3A 或 3B 代码中的问题引起的。
-
-### 3C 实现记录
-
-#### 关于Log catch up quikly优化
+### 关于Log catch up quikly优化
 
 论文中提到, nextIndex是通过多次RPC来减小(--)的, 实际上出错的概率并不高, 不一定需要实现优化
 但是在"TestFigure8Unreliable3C"中存在一种场景: Leader离线并接受到许多Log, 如果仅通过--去减小nextIndex, 会导致大量的RPC, 从而导致超时, 无法通过测试
 
 - 期间还会因为RPC的失败导致心跳失败, 产生一轮无意义的选举
 
-#### 关于日志复制的实现方式(3B遗留问题)
+### 关于日志复制的实现方式(3B遗留问题)
 
 在通过3B测试的版本中, 日志复制的实现方式是:
 
@@ -424,12 +429,12 @@ Tips: 3C 测试比 3A 或 3B 的测试要求更高，失败可能是由您在 3A
 - 期间还可能因为重试过多导致心跳失败, 产生一轮无意义的选举(没有实现Log catch up quikly优化)
 - 在实现单线程重试后, 进行3B测试, 发现如果不实现Log catch up quikly优化, 会导致超时, 无法通过测试(在未实现时, 因为并行重试, 会让nextIndex--的速度更快, 能够通过测试)
 
-##### 单线程重试带来的bug
+#### 单线程重试带来的bug
 
 随手重新测试了3A, 发现单线程重试会阻塞心跳
 在3A中有针对RPC超时的测试场景, 这样会导致测试失败
 
-##### 另一种实现方式
+#### 另一种实现方式
 
 - client请求Leader(rf.Start())时, Leader将日志追加到自己的Log中, 并立即发送AppendEntries RPC
 - Leader的心跳只是发送空的AppendEntries RPC, 用于心跳检测
@@ -438,6 +443,4 @@ Tips: 3C 测试比 3A 或 3B 的测试要求更高，失败可能是由您在 3A
 
 - 在client请求较多时, 会分散的发送AppendEntries RPC, 造成网络负担(导致一次RPC只发送一个日志)
 
-#### 日志复制过慢(3B遗留问题)
-
-情形描述: 在Log差距较大时
+### 重构AppendEntries架构
