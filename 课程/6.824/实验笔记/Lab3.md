@@ -121,7 +121,7 @@ $
 在评估您的提交时，我们将不会使用 `-race` 标志来运行测试。然而，您应该确保您的代码始终能够通过带有 `-race` 标志的测试。这样可以确保您的代码没有竞争条件，并且在多线程环境下也能正确运行。
 
 
-#### 测试结果
+#### 3A 测试结果
 
 使用助教提供的[dtest.py](https://gist.github.com/JJGO/0d73540ef7cc2f066cb535156b7cbdab)进行1600轮测试, 通过
 
@@ -142,6 +142,9 @@ $
 - 为了以后实验的方便，编写（或重写）清晰明了的代码。有关想法，请重新访问我们的[指导页面](https://pdos.csail.mit.edu/6.824/labs/guidance.html)，上面有关于如何开发和调试代码的提示。
 - 如果测试失败，请查看 test_test.go 和 config.go 来了解正在测试的内容。config.go 还说明了测试器如何使用 Raft API。
 
+#### 3B 测试结果
+
+TODO
 
 ### Part 3C: persistence
 
@@ -444,3 +447,132 @@ const (
 - 在client请求较多时, 会分散的发送AppendEntries RPC, 造成网络负担(导致一次RPC只发送一个日志)
 
 ### 重构AppendEntries架构
+
+> 之前心跳和日志复制的实现过于耦合, 导致3C遇到了许多问题, 决定重构
+
+#### handleAppendEntries
+
+向指定server发送一次AppendEntries RPC, 并根据返回值更新nextIndex&matchIndex
+
+```go
+// 处理AppendEntries请求(心跳/日志追加)
+func (rf *Raft) handleAppendEntries(server int, args *AppendEntriesArgs) {
+	var reply = &AppendEntriesReply{}
+
+	ok := rf.sendAppendEntries(server, args, reply)
+
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+
+	if !ok {
+		rf.printLog(LogReplication, fmt.Sprintf("send AppendEntries to %d failed", server))
+	} else if !reply.Success {
+		// 如果是对方的Term比自己大, 则转为Follower
+		if reply.Term > rf.currentTerm {
+			rf.SetState(Follower, reply.Term)
+			return
+		}
+
+		// 复制失败, 更新nextIndex
+		rf.updateNextIndex(reply, args, server)
+
+		rf.printLog(LogReplication, fmt.Sprintf("%s to %d, nextIndex: %d", mytool.AddColorStr(mytool.PURPLE, "retry AppendEntries"), server, rf.nextIndex[server]))
+	} else if reply.Success {
+		// 心跳不需要更新nextIndex
+		if args.isHeartbeat() {
+			return
+		}
+
+		// 复制成功, 更新nextIndex和matchIndex
+		rf.updateNextIndex(reply, args, server)
+		rf.matchIndex[server] = args.Entries[len(args.Entries)-1].Index
+		rf.checkAndUpdateCommitIndex()
+	}
+
+}
+```
+
+
+#### replicateLogEntries
+
+对一个server复制Log, 并无限重试
+因为实现的是单线程重试, 拒绝重入, 被拒绝且没有在重试中被添加的Entries会在下一次心跳中进行复制
+
+```go
+// 发送日志, 并无限重试
+func (rf *Raft) replicateLogEntries(server int, term int) {
+	sendTimes := 0
+	beginTime := time.Now()
+	// 设置重试标志, 防止其他线程重复发送
+	rf.mu.Lock()
+	if rf.retrying[server] {
+		// 有其他线程正在重发, 放弃本次日志复制
+		defer rf.mu.Unlock()
+		return
+	} else {
+		rf.retrying[server] = true
+		rf.printLog(Temp, fmt.Sprintf("goroutine(%d) set retrying[%d] to true", getGoroutineID(), server))
+	}
+	rf.mu.Unlock()
+
+	for !rf.killed() {
+
+		sendTimes++
+		rf.mu.Lock()
+		// 如果不再是Leader, 则结束重试
+		if rf.state != Leader || rf.currentTerm != term {
+			defer rf.mu.Unlock()
+			rf.retrying[server] = false
+			return
+		}
+
+		args := &AppendEntriesArgs{
+			Term:         rf.currentTerm,
+			LeaderId:     rf.me,
+			LeaderCommit: rf.commitIndex,
+			PrevLogIndex: rf.nextIndex[server] - 1,
+			PrevLogTerm:  rf.getLogEntry(rf.nextIndex[server] - 1).Term,
+			Entries:      rf.copyLogEntries(rf.nextIndex[server]), // 发送nextIndex之后的日志(如果没有, copyLogEntries返回空)
+		}
+
+		// 检查是否需要发送
+		if args.isHeartbeat() {
+			defer rf.mu.Unlock()
+			rf.retrying[server] = false
+			rf.printLog(LogReplication, fmt.Sprintf("AppendEntries to %d success\n\t(sendTimes: %d, cost: %v), nextIndex: %d",
+				server, sendTimes, time.Since(beginTime),
+				rf.nextIndex[server]))
+			return
+		}
+
+		go rf.handleAppendEntries(server, args)
+		rf.mu.Unlock()
+
+		// sleep一会, 重试
+		time.Sleep(APPEND_ENTRIES_RPC_RETRY_INTERVAL)
+
+	}
+}
+
+```
+
+#### sendHeartBeat
+向指定server发送一次心跳
+
+```go
+// 发送心跳
+// 未上锁
+func (rf *Raft) sendHeartBeat(server int) {
+	// 心跳也携带Entries, 区别在于是否重试
+	var args = &AppendEntriesArgs{
+		Term:         rf.currentTerm,
+		LeaderId:     rf.me,
+		LeaderCommit: rf.commitIndex,
+		PrevLogIndex: rf.nextIndex[server] - 1,
+		PrevLogTerm:  rf.getLogEntry(rf.nextIndex[server] - 1).Term,
+		Entries:      rf.copyLogEntries(rf.nextIndex[server]),
+	}
+
+	go rf.handleAppendEntries(server, args)
+}
+```
