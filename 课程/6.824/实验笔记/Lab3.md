@@ -144,6 +144,12 @@ $
 
 #### 3B 测试结果
 
+[重构AppendEntries架构](# 重构AppendEntries架构)后, 重新进行3B测试, 结果如下
+
+![](Lab3.assets/image-20241211151627075.png)
+
+
+
 
 ### Part 3C: persistence
 
