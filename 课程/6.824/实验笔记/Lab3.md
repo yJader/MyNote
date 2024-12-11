@@ -144,7 +144,6 @@ $
 
 #### 3B 测试结果
 
-TODO
 
 ### Part 3C: persistence
 
