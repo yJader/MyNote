@@ -74,7 +74,7 @@ sudo systemctl enable ssh
 
 
    ```bash
-   sudo ssh-keygen
+   ssh-keygen
    ```
 
 2. 将client生成的公钥(默认位于`/user/username/.ssh/id_rsa.pub`文件夹内) 拷贝到server的`/home/.ssh/authorized_keys`(也可能在`/home/your_username/.ssh/authorized_keys`)中
