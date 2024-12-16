@@ -364,18 +364,18 @@ func (rf *Raft) electionTimeoutTicker() {
 
 ## 3B 实现记录
 
-### heartbeatTicker错误
+### 3B-1 heartbeatTicker错误
 >
 > 在3A中未检测出来
 > 原先逻辑为: 先发送心跳, 再检测自身是否为Leader, 如果不是, go heartbeatTicker()线程结束, 如果是, sleep HEARTBEAT_INTERVAL后再次发送心跳
 
 但是检测过慢, 如果sleep期间, 自身降级为Follower, 还会发出一次错误的心跳 (导致了一些看晕了的bug, 甚至开始怀疑RPC的正确性)
 
-### 奇怪的DataRace
+### 3B-2 奇怪的DataRace
 
 go的切片如果使用的是 args.entries = rf.log[i:j], 获取到的切片依然引用原始的底层数组, 这意味着如果在其他线程中修改/读了entries, 会导致DataRace
 
-### 选举超时时间过短
+### 3B-3 选举超时时间过短
 
 错误发生逻辑: (三个节点S0, S1, S2)
 
@@ -407,14 +407,14 @@ const (
 
 ## 3C 实现记录
 
-### 关于Log catch up quikly优化
+### 3C-1 关于Log catch up quikly优化
 
 论文中提到, nextIndex是通过多次RPC来减小(--)的, 实际上出错的概率并不高, 不一定需要实现优化
 但是在"TestFigure8Unreliable3C"中存在一种场景: Leader离线并接受到许多Log, 如果仅通过--去减小nextIndex, 会导致大量的RPC, 从而导致超时, 无法通过测试
 
 - 期间还会因为RPC的失败导致心跳失败, 产生一轮无意义的选举
 
-### 关于日志复制的实现方式(3B遗留问题)
+### 3C-2 关于日志复制的实现方式(3B遗留问题)
 
 在通过3B测试的版本中, 日志复制的实现方式是:
 
@@ -422,12 +422,9 @@ const (
 - Leader通过心跳周期性地发送AppendEntries RPC, 将日志复制到Follower
   - 发送心跳时会检查nextIndex, 并自动添加日志(args.Entries为空则代表是心跳)
 
-优点:
+**优点**: 将心跳和日志复制统一在一个发送调用函数中, 代码简洁
 
-- 将心跳和日志复制统一在一个发送调用函数中, 代码简洁
-
-缺点:
-因为日志复制会无限重发, 而心跳不会, 导致下面的情况
+**缺点**: 因为日志复制会无限重发, 而心跳不会, 导致下面的情况
 
 - 时间点A启动发送心跳, 进行日志复制, reply失败, 无限重试
 - 时间点B启动发送心跳, 同样进行日志复制, reply失败, 无限重试
@@ -437,11 +434,11 @@ const (
 但是如果Follower与Leader的差距过大, 会导致许多次并行重试(时间点A, B, C...启动的handleAppendEntrirs线程都进行重试), 造成浪费
 
 - 期间还可能因为重试过多导致心跳失败, 产生一轮无意义的选举(没有实现Log catch up quikly优化)
-- 在实现单线程重试后, 进行3B测试, 发现如果不实现Log catch up quikly优化, 会导致超时, 无法通过测试(在未实现时, 因为并行重试, 会让nextIndex--的速度更快, 能够通过测试)
+- 在实现串行化重试后, 进行3B测试, 发现如果不实现Log catch up quikly优化, 会导致超时, 无法通过测试(在未实现时, 因为并行重试, 会让nextIndex--的速度更快, 能够通过测试)
 
-#### 单线程重试带来的bug
+#### 串行化重试带来的bug
 
-随手重新测试了3A, 发现单线程重试会阻塞心跳
+随手重新测试了3A, 发现串行化重试会阻塞心跳
 在3A中有针对RPC超时的测试场景, 这样会导致测试失败
 
 #### 另一种实现方式
@@ -453,7 +450,7 @@ const (
 
 - 在client请求较多时, 会分散的发送AppendEntries RPC, 造成网络负担(导致一次RPC只发送一个日志)
 
-### 重构AppendEntries架构
+### 3C-3 重构AppendEntries架构
 
 > 之前心跳和日志复制的实现过于耦合, 导致3C遇到了许多问题, 决定重构
 
@@ -503,7 +500,7 @@ func (rf *Raft) handleAppendEntries(server int, args *AppendEntriesArgs) {
 #### replicateLogEntries
 
 对一个server复制Log, 并无限重试
-因为实现的是单线程重试, 拒绝重入, 被拒绝且没有在重试中被添加的Entries会在下一次心跳中进行复制
+因为实现的是串行化重试, 拒绝重入, 被拒绝且没有在重试中被添加的Entries会在下一次心跳中进行复制
 
 ```go
 // 发送日志, 并无限重试
