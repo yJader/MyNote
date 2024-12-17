@@ -176,6 +176,8 @@ $
 - case 3：Follower的日志太短：nextIndex = XLen
 
 Tips: 3C 测试比 3A 或 3B 的测试要求更高，失败可能是由您在 3A 或 3B 代码中的问题引起的。
+### Part 3D: log compaction
+
 
 
 ## 3A实现记录
