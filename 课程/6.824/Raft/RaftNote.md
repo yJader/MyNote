@@ -123,7 +123,6 @@ Raft的特点之一--对同步中的问题的分解(decomposes the consensus pro
 - `term`：Candidate 的 Term ID
 -  `candidateId`: Candidate 的 ID
 -  `lastLogIndex`: Candidate 所持有的最后一条日志记录的 index
-
 - `lastLogTerm`: Candidate 所持有的最后一条日志记录的 Term ID
 
 返回值：

@@ -801,7 +801,7 @@ public class StreamAPITest1 {
 
 **3.2.1 筛选与切片**
 
-![image-20200507115721208](Java相关/java基础/{{filename}}.assests/Java相关/java基础/22Java8新特性.assets/IMG-20241208161932480.awebp)
+![image-20200507115721208](22Java8新特性.assets/IMG-20241208161932480.awebp)
 
 **代码示例:**
 

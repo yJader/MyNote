@@ -1,4 +1,5 @@
 # Lab 3: Raft
+
 ## 实验文档
 
 ### Introduction
@@ -120,7 +121,6 @@ $
 
 在评估您的提交时，我们将不会使用 `-race` 标志来运行测试。然而，您应该确保您的代码始终能够通过带有 `-race` 标志的测试。这样可以确保您的代码没有竞争条件，并且在多线程环境下也能正确运行。
 
-
 #### 3A 测试结果
 
 使用助教提供的[dtest.py](https://gist.github.com/JJGO/0d73540ef7cc2f066cb535156b7cbdab)进行1600轮测试, 通过
@@ -148,9 +148,6 @@ $
 
 ![](Lab3.assets/image-20241211151627075.png)
 
-
-
-
 ### Part 3C: persistence
 
 如果基于 Raft 的服务器重启，它应该从上次离开的地方恢复服务。这要求 Raft 保持能够在重启后存活的状态。论文中的图 2 提到了哪些状态应该是持久的。
@@ -176,6 +173,11 @@ $
 - case 3：Follower的日志太短：nextIndex = XLen
 
 Tips: 3C 测试比 3A 或 3B 的测试要求更高，失败可能是由您在 3A 或 3B 代码中的问题引起的。
+
+#### 3C 测试结果
+
+![[IMG-20241212173459708.png]]
+
 ### Part 3D: log compaction
 
 目前，重启的服务器会重放完整的 Raft 日志以恢复其状态。然而，对于一个长期运行的服务来说，记住完整的 Raft 日志是不切实际的。因此，你需要修改 Raft，使其能够配合服务定期持久化存储“快照”状态。在生成快照后，Raft 可以丢弃早于快照的日志条目。这样可以减少持久化数据的大小并加快重启速度。然而，这也带来了一个问题：某个跟随者可能落后得太多，以至于需要的日志条目已经被领导者丢弃。此时，领导者必须发送快照以及从快照开始的日志条目。Raft 扩展论文的第 7 节概述了该方案，你需要设计其中的细节。
@@ -199,6 +201,7 @@ Snapshot(index int, snapshot []byte)
 当服务器重启时，应用层会读取持久化的快照并恢复其保存的状态。
 
 #### 3D Task
+
 你需要实现 `Snapshot()` 和 `InstallSnapshot` RPC，以及支持这些功能的 Raft 修改（例如，支持仅保留修剪后的日志）。当通过 3D 测试（以及所有之前的实验 3 测试）时，你的解决方案才算完整。
 
 #### 3D Tips
@@ -209,8 +212,8 @@ Snapshot(index int, snapshot []byte)
 - 在单个 `InstallSnapshot` RPC 中发送完整的快照。不要实现论文图 13 所描述的分段机制。
 - Raft 必须以一种方式丢弃旧的日志条目，使得 Go 的垃圾回收器能够释放并重用这些内存。这意味着必须确保没有任何可达引用（指针）指向被丢弃的日志条目。
 - 运行整个实验 3 测试（3A+3B+3C+3D）时的合理耗时参考：
-	- 在不启用 `-race` 的情况下，实际运行时间应为 6 分钟，CPU 时间约为 1 分钟。
-	- 启用 `-race` 时，实际运行时间约为 10 分钟，CPU 时间约为 2 分钟。
+ 	- 在不启用 `-race` 的情况下，实际运行时间应为 6 分钟，CPU 时间约为 1 分钟。
+ 	- 启用 `-race` 时，实际运行时间约为 10 分钟，CPU 时间约为 2 分钟。
 
 ## 3A实现记录
 
@@ -396,18 +399,18 @@ func (rf *Raft) electionTimeoutTicker() {
 
 ## 3B 实现记录
 
-### heartbeatTicker错误
+### 3B-1 heartbeatTicker错误
 >
 > 在3A中未检测出来
 > 原先逻辑为: 先发送心跳, 再检测自身是否为Leader, 如果不是, go heartbeatTicker()线程结束, 如果是, sleep HEARTBEAT_INTERVAL后再次发送心跳
 
 但是检测过慢, 如果sleep期间, 自身降级为Follower, 还会发出一次错误的心跳 (导致了一些看晕了的bug, 甚至开始怀疑RPC的正确性)
 
-### 奇怪的DataRace
+### 3B-2 奇怪的DataRace
 
 go的切片如果使用的是 args.entries = rf.log[i:j], 获取到的切片依然引用原始的底层数组, 这意味着如果在其他线程中修改/读了entries, 会导致DataRace
 
-### 选举超时时间过短
+### 3B-3 选举超时时间过短
 
 错误发生逻辑: (三个节点S0, S1, S2)
 
@@ -436,17 +439,16 @@ const (
 
 - 问题在于这两个函数之间, 被插入了一次心跳(将currentTerm更新为LeaderTerm), 但是startElection()之后会直接currentTerm++, 这时携带更高Term的RequestVote RPC会使得Leader降级, 影响集群稳定性
 
-
 ## 3C 实现记录
 
-### 关于Log catch up quikly优化
+### 3C-1 关于Log catch up quikly优化
 
 论文中提到, nextIndex是通过多次RPC来减小(--)的, 实际上出错的概率并不高, 不一定需要实现优化
 但是在"TestFigure8Unreliable3C"中存在一种场景: Leader离线并接受到许多Log, 如果仅通过--去减小nextIndex, 会导致大量的RPC, 从而导致超时, 无法通过测试
 
 - 期间还会因为RPC的失败导致心跳失败, 产生一轮无意义的选举
 
-### 关于日志复制的实现方式(3B遗留问题)
+### 3C-2 关于日志复制的实现方式(3B遗留问题)
 
 在通过3B测试的版本中, 日志复制的实现方式是:
 
@@ -454,12 +456,9 @@ const (
 - Leader通过心跳周期性地发送AppendEntries RPC, 将日志复制到Follower
   - 发送心跳时会检查nextIndex, 并自动添加日志(args.Entries为空则代表是心跳)
 
-优点:
+**优点**: 将心跳和日志复制统一在一个发送调用函数中, 代码简洁
 
-- 将心跳和日志复制统一在一个发送调用函数中, 代码简洁
-
-缺点:
-因为日志复制会无限重发, 而心跳不会, 导致下面的情况
+**缺点**: 因为日志复制会无限重发, 而心跳不会, 导致下面的情况
 
 - 时间点A启动发送心跳, 进行日志复制, reply失败, 无限重试
 - 时间点B启动发送心跳, 同样进行日志复制, reply失败, 无限重试
@@ -469,11 +468,11 @@ const (
 但是如果Follower与Leader的差距过大, 会导致许多次并行重试(时间点A, B, C...启动的handleAppendEntrirs线程都进行重试), 造成浪费
 
 - 期间还可能因为重试过多导致心跳失败, 产生一轮无意义的选举(没有实现Log catch up quikly优化)
-- 在实现单线程重试后, 进行3B测试, 发现如果不实现Log catch up quikly优化, 会导致超时, 无法通过测试(在未实现时, 因为并行重试, 会让nextIndex--的速度更快, 能够通过测试)
+- 在实现串行化重试后, 进行3B测试, 发现如果不实现Log catch up quikly优化, 会导致超时, 无法通过测试(在未实现时, 因为并行重试, 会让nextIndex--的速度更快, 能够通过测试)
 
-#### 单线程重试带来的bug
+#### 串行化重试带来的bug
 
-随手重新测试了3A, 发现单线程重试会阻塞心跳
+随手重新测试了3A, 发现串行化重试会阻塞心跳
 在3A中有针对RPC超时的测试场景, 这样会导致测试失败
 
 #### 另一种实现方式
@@ -485,7 +484,7 @@ const (
 
 - 在client请求较多时, 会分散的发送AppendEntries RPC, 造成网络负担(导致一次RPC只发送一个日志)
 
-### 重构AppendEntries架构
+### 3C-3 重构AppendEntries架构
 
 > 之前心跳和日志复制的实现过于耦合, 导致3C遇到了许多问题, 决定重构
 
@@ -496,122 +495,136 @@ const (
 ```go
 // 处理AppendEntries请求(心跳/日志追加)
 func (rf *Raft) handleAppendEntries(server int, args *AppendEntriesArgs) {
-	var reply = &AppendEntriesReply{}
+ var reply = &AppendEntriesReply{}
 
-	ok := rf.sendAppendEntries(server, args, reply)
+ ok := rf.sendAppendEntries(server, args, reply)
 
-	rf.mu.Lock()
-	defer rf.mu.Unlock()
+ rf.mu.Lock()
+ defer rf.mu.Unlock()
 
-	if !ok {
-		rf.printLog(LogReplication, fmt.Sprintf("send AppendEntries to %d failed", server))
-	} else if !reply.Success {
-		// 如果是对方的Term比自己大, 则转为Follower
-		if reply.Term > rf.currentTerm {
-			rf.SetState(Follower, reply.Term)
-			return
-		}
+ if !ok {
+  rf.printLog(LogReplication, fmt.Sprintf("send AppendEntries to %d failed", server))
+ } else if !reply.Success {
+  // 如果是对方的Term比自己大, 则转为Follower
+  if reply.Term > rf.currentTerm {
+   rf.SetState(Follower, reply.Term)
+   return
+  }
 
-		// 复制失败, 更新nextIndex
-		rf.updateNextIndex(reply, args, server)
+  // 复制失败, 更新nextIndex
+  rf.updateNextIndex(reply, args, server)
 
-		rf.printLog(LogReplication, fmt.Sprintf("%s to %d, nextIndex: %d", mytool.AddColorStr(mytool.PURPLE, "retry AppendEntries"), server, rf.nextIndex[server]))
-	} else if reply.Success {
-		// 心跳不需要更新nextIndex
-		if args.isHeartbeat() {
-			return
-		}
+  rf.printLog(LogReplication, fmt.Sprintf("%s to %d, nextIndex: %d", mytool.AddColorStr(mytool.PURPLE, "retry AppendEntries"), server, rf.nextIndex[server]))
+ } else if reply.Success {
+  // 心跳不需要更新nextIndex
+  if args.isHeartbeat() {
+   return
+  }
 
-		// 复制成功, 更新nextIndex和matchIndex
-		rf.updateNextIndex(reply, args, server)
-		rf.matchIndex[server] = args.Entries[len(args.Entries)-1].Index
-		rf.checkAndUpdateCommitIndex()
-	}
+  // 复制成功, 更新nextIndex和matchIndex
+  rf.updateNextIndex(reply, args, server)
+  rf.matchIndex[server] = args.Entries[len(args.Entries)-1].Index
+  rf.checkAndUpdateCommitIndex()
+ }
 
 }
 ```
 
-
 #### replicateLogEntries
 
 对一个server复制Log, 并无限重试
-因为实现的是单线程重试, 拒绝重入, 被拒绝且没有在重试中被添加的Entries会在下一次心跳中进行复制
+因为实现的是串行化重试, 拒绝重入, 被拒绝且没有在重试中被添加的Entries会在下一次心跳中进行复制
 
 ```go
 // 发送日志, 并无限重试
 func (rf *Raft) replicateLogEntries(server int, term int) {
-	sendTimes := 0
-	beginTime := time.Now()
-	// 设置重试标志, 防止其他线程重复发送
-	rf.mu.Lock()
-	if rf.retrying[server] {
-		// 有其他线程正在重发, 放弃本次日志复制
-		defer rf.mu.Unlock()
-		return
-	} else {
-		rf.retrying[server] = true
-		rf.printLog(Temp, fmt.Sprintf("goroutine(%d) set retrying[%d] to true", getGoroutineID(), server))
-	}
-	rf.mu.Unlock()
+ sendTimes := 0
+ beginTime := time.Now()
+ // 设置重试标志, 防止其他线程重复发送
+ rf.mu.Lock()
+ if rf.retrying[server] {
+  // 有其他线程正在重发, 放弃本次日志复制
+  defer rf.mu.Unlock()
+  return
+ } else {
+  rf.retrying[server] = true
+  rf.printLog(Temp, fmt.Sprintf("goroutine(%d) set retrying[%d] to true", getGoroutineID(), server))
+ }
+ rf.mu.Unlock()
 
-	for !rf.killed() {
+ for !rf.killed() {
 
-		sendTimes++
-		rf.mu.Lock()
-		// 如果不再是Leader, 则结束重试
-		if rf.state != Leader || rf.currentTerm != term {
-			defer rf.mu.Unlock()
-			rf.retrying[server] = false
-			return
-		}
+  sendTimes++
+  rf.mu.Lock()
+  // 如果不再是Leader, 则结束重试
+  if rf.state != Leader || rf.currentTerm != term {
+   defer rf.mu.Unlock()
+   rf.retrying[server] = false
+   return
+  }
 
-		args := &AppendEntriesArgs{
-			Term:         rf.currentTerm,
-			LeaderId:     rf.me,
-			LeaderCommit: rf.commitIndex,
-			PrevLogIndex: rf.nextIndex[server] - 1,
-			PrevLogTerm:  rf.getLogEntry(rf.nextIndex[server] - 1).Term,
-			Entries:      rf.copyLogEntries(rf.nextIndex[server]), // 发送nextIndex之后的日志(如果没有, copyLogEntries返回空)
-		}
+  args := &AppendEntriesArgs{
+   Term:         rf.currentTerm,
+   LeaderId:     rf.me,
+   LeaderCommit: rf.commitIndex,
+   PrevLogIndex: rf.nextIndex[server] - 1,
+   PrevLogTerm:  rf.getLogEntry(rf.nextIndex[server] - 1).Term,
+   Entries:      rf.copyLogEntries(rf.nextIndex[server]), // 发送nextIndex之后的日志(如果没有, copyLogEntries返回空)
+  }
 
-		// 检查是否需要发送
-		if args.isHeartbeat() {
-			defer rf.mu.Unlock()
-			rf.retrying[server] = false
-			rf.printLog(LogReplication, fmt.Sprintf("AppendEntries to %d success\n\t(sendTimes: %d, cost: %v), nextIndex: %d",
-				server, sendTimes, time.Since(beginTime),
-				rf.nextIndex[server]))
-			return
-		}
+  // 检查是否需要发送
+  if args.isHeartbeat() {
+   defer rf.mu.Unlock()
+   rf.retrying[server] = false
+   rf.printLog(LogReplication, fmt.Sprintf("AppendEntries to %d success\n\t(sendTimes: %d, cost: %v), nextIndex: %d",
+    server, sendTimes, time.Since(beginTime),
+    rf.nextIndex[server]))
+   return
+  }
 
-		go rf.handleAppendEntries(server, args)
-		rf.mu.Unlock()
+  go rf.handleAppendEntries(server, args)
+  rf.mu.Unlock()
 
-		// sleep一会, 重试
-		time.Sleep(APPEND_ENTRIES_RPC_RETRY_INTERVAL)
+  // sleep一会, 重试
+  time.Sleep(APPEND_ENTRIES_RPC_RETRY_INTERVAL)
 
-	}
+ }
 }
 
 ```
 
 #### sendHeartBeat
+
 向指定server发送一次心跳
 
 ```go
 // 发送心跳
 // 未上锁
 func (rf *Raft) sendHeartBeat(server int) {
-	// 心跳也携带Entries, 区别在于是否重试
-	var args = &AppendEntriesArgs{
-		Term:         rf.currentTerm,
-		LeaderId:     rf.me,
-		LeaderCommit: rf.commitIndex,
-		PrevLogIndex: rf.nextIndex[server] - 1,
-		PrevLogTerm:  rf.getLogEntry(rf.nextIndex[server] - 1).Term,
-		Entries:      rf.copyLogEntries(rf.nextIndex[server]),
-	}
+ // 心跳也携带Entries, 区别在于是否重试
+ var args = &AppendEntriesArgs{
+  Term:         rf.currentTerm,
+  LeaderId:     rf.me,
+  LeaderCommit: rf.commitIndex,
+  PrevLogIndex: rf.nextIndex[server] - 1,
+  PrevLogTerm:  rf.getLogEntry(rf.nextIndex[server] - 1).Term,
+  Entries:      rf.copyLogEntries(rf.nextIndex[server]),
+ }
 
-	go rf.handleAppendEntries(server, args)
+ go rf.handleAppendEntries(server, args)
 }
 ```
+
+## Lab3D 实现记录
+
+### 3D-1 重构LogEntry, 实现存储部分Log
+
+> A good place to start is to modify your code to so that it is able to store just the part of the log starting at some index X. Initially you can set X to zero and run the 3B/3C tests.
+
+需要重构rf.log的访问相关逻辑(log数组的index需要带有snapshot相关的偏移量)
+
+- 好在之前为了解决"raft的log下标从1开始, 而数组结构从0开始"的问题, 封装了log切片的访问, 重构起来省事一些
+
+事实证明: 重构省事不了多少, 添加snapshot会影响Figure2的部分逻辑, 这里重构起来会比较危险
+
+- 在修改时不够细心, 又浪费一晚上...
