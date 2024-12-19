@@ -580,3 +580,15 @@ func (rf *Raft) sendHeartBeat(server int) {
 	go rf.handleAppendEntries(server, args)
 }
 ```
+
+## Lab3D 实现记录
+
+### 3D-1 重构LogEntry, 实现存储部分Log
+
+> A good place to start is to modify your code to so that it is able to store just the part of the log starting at some index X. Initially you can set X to zero and run the 3B/3C tests.
+
+需要重构rf.log的访问相关逻辑(log数组的index需要带有snapshot相关的偏移量)
+- 好在之前为了解决"raft的log下标从1开始, 而数组结构从0开始"的问题, 封装了log切片的访问, 重构起来省事一些
+
+事实证明: 重构省事不了多少, 添加snapshot会影响Figure2的部分逻辑, 这里重构起来会比较危险
+- 在修改时不够细心, 又浪费一晚上...
