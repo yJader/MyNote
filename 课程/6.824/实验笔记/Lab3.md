@@ -640,3 +640,11 @@ func (rf *Raft) sendHeartBeat(server int) {
 事实证明: 重构省事不了多少, 添加snapshot会影响Figure2的部分逻辑, 这里重构起来会比较危险
 
 - 在修改时不够细心, 又浪费一晚上...
+
+#### 3D-2 神奇的死锁
+
+在3D的basic测试中, 在server Commit时被applyCh阻塞, 导致server发生死锁
+
+原因在于config.go的`applierSnap`函数中, 读取applyCh并发现已提交数>SnapShotInterval时, 会调用server的`rf.Snapshot`, 导致死锁
+
+fix方案: 先复习一下channel的特性吧!
