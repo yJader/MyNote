@@ -215,6 +215,18 @@ Snapshot(index int, snapshot []byte)
  	- 在不启用 `-race` 的情况下，实际运行时间应为 6 分钟，CPU 时间约为 1 分钟。
  	- 启用 `-race` 时，实际运行时间约为 10 分钟，CPU 时间约为 2 分钟。
 
+#### 3D Tests
+
+##### Snapshot的测试逻辑
+
+snapshot在这个测试中存储的是编码后的log, 在测试中会进行解码并检查
+
+applierSnap函数中描述了启用快照功能后, 快照的调用时机
+- applyCh接收Raft的两种ApplyMsg: command(`CommandValid == true`) or snapshot(`SnapshotValid == true`)
+- 当接收到snapshot时, 解码, 并更新对应server的log
+- 当接收到command时, 检查是servers否一致, 然后每当接受到的command达到SnapShotInterval个时, 调用一次Raft的Snapshot
+
+
 ## 3A实现记录
 
 ### RequestVote
