@@ -641,10 +641,19 @@ func (rf *Raft) sendHeartBeat(server int) {
 
 - 在修改时不够细心, 又浪费一晚上...
 
-#### 3D-2 神奇的死锁
+### 3D-2 applyCh导致的死锁
+
+```mermaid
+graph 
+1("server: commit, rf.mu.Lock()") --"等待applyCh读取完毕"--> 2("tester: 读取commit信息(m := range applyCh)")
+2 --"调用RPC 创建快照"--> 3("server: Snapshot, rf.mu.Lock()")
+3 --"等待释放rf.mu"--> 1
+```
 
 在3D的basic测试中, 在server Commit时被applyCh阻塞, 导致server发生死锁
 
 原因在于config.go的`applierSnap`函数中, 读取applyCh并发现已提交数>SnapShotInterval时, 会调用server的`rf.Snapshot`, 导致死锁
 
-fix方案: 先复习一下channel的特性吧!
+fix方案1: 异步commit, 简单的用go func()去apply, 发现会因为异步导致apply顺序错误, 不能通过测试
+
+fix方案2: 在server中用一个线程专门执行apply, 而不是像之前实现的, 在commit时手动apply
