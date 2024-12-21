@@ -646,7 +646,7 @@ func (rf *Raft) sendHeartBeat(server int) {
 ```mermaid
 graph 
 1("server: commit, rf.mu.Lock()") --"等待applyCh读取完毕"--> 2("tester: 读取commit信息(m := range applyCh)")
-2 --"调用RPC 创建快照"--> 3("server: Snapshot, rf.mu.Lock()")
+2 --"消息达到SnapShotInterval 调用RPC 创建快照"--> 3("server: Snapshot, rf.mu.Lock()")
 3 --"等待释放rf.mu"--> 1
 ```
 
@@ -657,3 +657,34 @@ graph
 fix方案1: 异步commit, 简单的用go func()去apply, 发现会因为异步导致apply顺序错误, 不能通过测试
 
 fix方案2: 在server中用一个线程专门执行apply, 而不是像之前实现的, 在commit时手动apply
+
+### 3D-3 config.go的测试逻辑导致的bug
+
+config.go中的applierSnap()用于处理applyCh的消息
+- Snapshot消息, 会调用ingestSnap()去处理, 在ingestSnap()的结尾会更新`cfg.lastApplied[i] = lastIncludedIndex`
+- Command消息, 在一些校验后会更新`cfg.lastApplied[i] = m.CommandIndex`
+
+如3D-2中描述的, Command消息接收数达到`SnapshotInterval`时, 会调用rf.Snapshot来创建快照, 这时server会发送一个Snapshot消息到applyCh
+问题在于: Command的apply是连续发送**连续一段**的, 其中会有某一个达到SanpshotInterval, 调用的Snapshot的index参数是**连续一段的Command**的中间部分, 导致后续的Snapshot消息错误的降低了`cfg.lastApplied[i]`
+```shell
+16:51:01.120013 0(L, T1, C10) --> [PeerState] Leader COMMIT log entries [2-10], logs: {
+	...
+}
+Temp: server 0 lastApplied 1 -> 2
+Temp: server 0 lastApplied 2 -> 3
+Temp: server 0 lastApplied 3 -> 4
+Temp: server 0 lastApplied 4 -> 5
+Temp: server 0 lastApplied 5 -> 6
+Temp: server 0 lastApplied 6 -> 7
+Temp: server 0 lastApplied 7 -> 8
+Temp: server 0 lastApplied 8 -> 9
+16:51:01.122495 0(L, T1, C10) --> [Snapshot] start snapshot, index: 9, term: 1
+Temp: server 0 lastApplied 9 -> 10
+16:51:01.123883 0(L, T1, C10) --> [Temp] update snapshot, snapshot: LastIncludedIndex: 9, LastIncludedTerm: 1, state: ignore
+Temp: server 0 lastApplied 10 -> 9 # 这里的lastApplied因为Snapshot降低了
+```
+
+正确的逻辑: 不能连续的apply一长段Command, 提交一个Command后需要及时响应Snapshot并提交
+
+fix方案1: 循环中每次apply1个Command, 然后检查Snapshot是否需要更新
+fix方案2: TODO
