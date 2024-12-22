@@ -684,7 +684,9 @@ Temp: server 0 lastApplied 9 -> 10
 Temp: server 0 lastApplied 10 -> 9 # 这里的lastApplied因为Snapshot降低了
 ```
 
-正确的逻辑: 不能连续的apply一长段Command, 提交一个Command后需要及时响应Snapshot并提交
+正确的逻辑: 不能连续的apply一长段Command, 提交一个Command后需要及时响应Snapshot并apply Snapshot
+> [Students' Guide to Raft :: Jon Gjengset](https://thesquareplanet.com/blog/students-guide-to-raft/)
+> When snapshotting application state, you need to make sure that the application state corresponds to the state following some known index in the Raft log. This means that the application either needs to communicate to Raft what index the snapshot corresponds to, or that Raft needs to delay applying additional log entries until the snapshot has been completed.
 
 fix方案1: 循环中每次apply1个Command, 然后检查Snapshot是否需要更新
 fix方案2: TODO
