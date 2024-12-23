@@ -693,5 +693,5 @@ fix方案2: TODO
 
 相似问题: 在没有实现installSnapshot时, 在3节点情况下
 - Leader复制到1个Follower成功, commit->apply->Snapshot, 删除已commit的Log
-- 在复制到另一个Follower时, AppendEntries的参数需要传输**已删除的**LogEntries
-- 就算之后实现了InstallSnapshot, 这样也会导致无意义的InstallSnapshot开销(对于一两个key的修改操作 > 状态机的状态)
+- 在LogReplicate到另一个Follower时, AppendEntries RPC需要传输**已删除的**LogEntries
+- 就算之后实现了InstallSnapshot, 这样也会导致无意义的InstallSnapshot开销(一两个key的修改操作 > 状态机的状态)
