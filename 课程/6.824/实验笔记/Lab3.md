@@ -658,7 +658,7 @@ fix方案1: 异步commit, 简单的用go func()去apply, 发现会因为异步�
 
 fix方案2: 在server中用一个线程专门执行apply, 而不是像之前实现的, 在commit时手动apply
 
-### 3D-3 config.go的测试逻辑导致的bug
+### 3D-3 snapshot交互逻辑
 
 config.go中的applierSnap()用于处理applyCh的消息
 - Snapshot消息, 会调用ingestSnap()去处理, 在ingestSnap()的结尾会更新`cfg.lastApplied[i] = lastIncludedIndex`
