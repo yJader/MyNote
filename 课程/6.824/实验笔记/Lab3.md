@@ -217,9 +217,48 @@ Snapshot(index int, snapshot []byte)
 
 #### 3D Tests
 
-##### Snapshot的测试逻辑
+##### snapshot的内容
 
-snapshot在这个测试中存储的是编码后的log, 在测试中会进行解码并检查
+snapshot(状态机在某时刻的状态)在这个测试中存储的是编码后的log(command)以及快照中包含的最后一个log的index, 在测试中会进行解码并检查是否和log匹配
+
+逐步分析: 
+1. 编码后的log即为下面的`var xlog []interface{}`
+2. **xlog**: 根据config.go, xlog为一个**切片**, 存储`cfg.log[i][j]`, `i`为server, `j`为CommandIndex(LogEntryIndex), `interface{}`存储ApplyMsg.Command
+3. **Command**: ApplyMsg.Command即为LogEntry.Command, 这个Command来源于Raft.Start, 由测试程序调用, 通常为指定数字or`rand.Int()`
+
+```go
+type config struct {
+// ...
+	logs        []map[int]interface{} // copy of each server's committed entries
+// ...
+}
+
+// config.go:145
+func (cfg *config) checkLogs(i int, m ApplyMsg) (string, bool) {
+	v := m.Command
+// ...
+	cfg.logs[i][m.CommandIndex] = v
+// ...
+}
+
+// config.go:218
+func (cfg *config) applierSnap(i int, applyCh chan ApplyMsg) {
+// ......
+	w := new(bytes.Buffer)
+	e := labgob.NewEncoder(w)
+	e.Encode(m.CommandIndex)
+	var xlog []interface{}
+	for j := 0; j <= m.CommandIndex; j++ {
+		xlog = append(xlog, cfg.logs[i][j])
+	}
+	e.Encode(xlog)
+	rf.Snapshot(m.CommandIndex, w.Bytes())
+// ......
+}
+```
+
+
+##### Snapshot的测试逻辑
 
 applierSnap函数中描述了启用快照功能后, 快照的调用时机
 - applyCh接收Raft的两种ApplyMsg: command(`CommandValid == true`) or snapshot(`SnapshotValid == true`)
@@ -695,3 +734,47 @@ fix方案2: TODO
 - Leader复制到1个Follower成功, commit->apply->Snapshot, 删除已commit的Log
 - 在LogReplicate到另一个Follower时, AppendEntries RPC需要传输**已删除的**LogEntries
 - 就算之后实现了InstallSnapshot, 这样也会导致无意义的InstallSnapshot开销(一两个key的修改操作 > 状态机的状态)
+
+### 3D-3 Log size too large
+
+> 卡了好久, 过载期间还分析了一下[快照里到底存了什么](#snapshot的内容) (实际上并不需要考虑快照大小)
+
+```shell
+--- FAIL: TestSnapshotBasic3D (4.22s)
+    test_test.go:1153: Log size too large, i: 14, size: 2106
+FAIL
+```
+
+```go
+// Maximum log size across all servers
+func (cfg *config) LogSize() int {
+	logsize := 0
+	for i := 0; i < cfg.n; i++ {
+		n := cfg.saved[i].RaftStateSize()
+		if n > logsize {
+			logsize = n
+		}
+	}
+	return logsize
+}
+
+func (ps *Persister) RaftStateSize() int {
+	ps.mu.Lock()
+	defer ps.mu.Unlock()
+	return len(ps.raftstate)
+}
+
+type Persister struct {
+	mu        sync.Mutex
+	raftstate []byte
+	snapshot  []byte
+}
+func (ps *Persister) Save(raftstate []byte, snapshot []byte) {
+	ps.mu.Lock()
+	defer ps.mu.Unlock()
+	ps.raftstate = clone(raftstate)
+	ps.snapshot = clone(snapshot)
+}
+```
+
+破案, 忘记Persister.Save()中raftstate和snapshot是分别Persist的了, 难怪too large
