@@ -778,3 +778,13 @@ func (ps *Persister) Save(raftstate []byte, snapshot []byte) {
 ```
 
 破案, 忘记Persister.Save()中raftstate和snapshot是分别Persist的了, 难怪too large
+- 要注意, test会检查snapshot的内容, 所以persister.Save()参数中的Snapshot应为`func (rf *Raft) Snapshot(index int, snapshot []byte)`的参数snapshot
+  
+**反思**: 我在实现时, 封装了快照相关状态为一个结构体, 在后续的实现时就出现了逻辑混乱
+```go
+type RaftSnapshot struct {
+	LastIncludedIndex int
+	LastIncludedTerm  int
+	State             []byte
+}
+```
