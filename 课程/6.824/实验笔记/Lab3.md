@@ -689,4 +689,5 @@ Temp: server 0 lastApplied 10 -> 9 # 这里的lastApplied因为Snapshot降低了
 > When snapshotting application state, you need to make sure that the application state corresponds to the state following some known index in the Raft log. This means that the application either needs to communicate to Raft what index the snapshot corresponds to, or that Raft needs to delay applying additional log entries until the snapshot has been completed.
 
 fix方案1: 循环中每次apply1个Command, 然后检查Snapshot是否需要更新
+- 在未实现InstallSnapshot时, 会因为Leader apply Snapshot过快, 导致删除了Entries, LogReplicate出错
 fix方案2: TODO
