@@ -265,6 +265,9 @@ applierSnap函数中描述了启用快照功能后, 快照的调用时机
 - 当接收到snapshot时, 解码, 并更新对应server的log
 - 当接收到command时, 检查是servers否一致, 然后每当接受到的command达到SnapShotInterval个时, 调用一次Raft的Snapshot
 
+#### 3D 测试结果
+
+
 
 ## 3A实现记录
 
@@ -736,7 +739,7 @@ fix方案2: TODO
 - 在LogReplicate到另一个Follower时, AppendEntries RPC需要传输**已删除的**LogEntries
 - 就算之后实现了InstallSnapshot, 这样也会导致无意义的InstallSnapshot开销(一两个key的修改操作 > 状态机的状态)
 
-### 3D-3 Log size too large
+### 3D-4 Log size too large
 
 > 卡了好久, 过载期间还分析了一下[快照里到底存了什么](#snapshot的内容) (实际上并不需要考虑快照大小)
 
@@ -789,3 +792,15 @@ type RaftSnapshot struct {
 	State             []byte
 }
 ```
+
+### 3D-5 apply过慢(failed to reach agreement)
+
+在完成3D并通过3D(2000轮)测试后, 进行回归测试, 发现在TestFigure8Unreliable3C中会出现FAIL
+![](Lab3.assets/image-20241227000216563.png)
+
+检查日志后, 猜测为快照实现时, 需要及时响应Snapshot并apply快照, 因此applier的循环中, 每次只apply一个log entry
+且raft并没有持久化当前apply了哪些信息, 当crash后, server会从0开始逐个apply log, 在日志中会看到巨量连续的apply信息
+![](Lab3.assets/image-20241227000926455.png)
+- 可以看到, 应该是只差一些就能及时apply, 通过测试(或许关闭日志就能pass了呢XD)
+
+fix方案: TODO
