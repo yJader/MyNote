@@ -796,11 +796,12 @@ type RaftSnapshot struct {
 ### 3D-5 apply过慢(failed to reach agreement)
 
 在完成3D并通过3D(2000轮)测试后, 进行回归测试, 发现在TestFigure8Unreliable3C中会出现FAIL
-![](Lab3.assets/image-20241227000216563.png)
+![](Lab3.assets/IMG-Lab3-20241227090011819.png)
 
 检查日志后, 猜测为快照实现时, 需要及时响应Snapshot并apply快照, 因此applier的循环中, 每次只apply一个log entry
 且raft并没有持久化当前apply了哪些信息, 当crash后, server会从0开始逐个apply log, 在日志中会看到巨量连续的apply信息
-![](Lab3.assets/image-20241227000926455.png)
+![](Lab3.assets/IMG-Lab3-20241227090012052.png)
 - 可以看到, 应该是只差一些就能及时apply, 通过测试(或许关闭日志就能pass了呢XD)
 
-fix方案: TODO
+fix方案: 连续apply日志, 在每次apply后获取锁来阻塞apply
+原理: applyCh是一个无缓冲的通道, 参考[3D-2 applyCh导致的死锁](<#3D-2 applyCh导致的死锁>)
