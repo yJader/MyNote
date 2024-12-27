@@ -803,4 +803,4 @@ type RaftSnapshot struct {
 ![](Lab3.assets/image-20241227000926455.png)
 - 可以看到, 应该是只差一些就能及时apply, 通过测试(或许关闭日志就能pass了呢XD)
 
-fix方案: TODO
+fix方案1: 缩短applier的sleep间隔
