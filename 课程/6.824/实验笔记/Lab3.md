@@ -495,7 +495,7 @@ const (
 
 ## 3C 实现记录
 
-### 3C-1 关于Log catch up quikly优化
+### 3C-1 关于Log catch up quickly优化
 
 论文中提到, nextIndex是通过多次RPC来减小(--)的, 实际上出错的概率并不高, 不一定需要实现优化
 但是在"TestFigure8Unreliable3C"中存在一种场景: Leader离线并接受到许多Log, 如果仅通过--去减小nextIndex, 会导致大量的RPC, 从而导致超时, 无法通过测试
@@ -796,11 +796,51 @@ type RaftSnapshot struct {
 ### 3D-5 apply过慢(failed to reach agreement)
 
 在完成3D并通过3D(2000轮)测试后, 进行回归测试, 发现在TestFigure8Unreliable3C中会出现FAIL
-![](Lab3.assets/image-20241227000216563.png)
+![](Lab3.assets/IMG-Lab3-20241227090011819.png)
+
+#### 原因1: Snapshot导致的apply过慢
 
 检查日志后, 猜测为快照实现时, 需要及时响应Snapshot并apply快照, 因此applier的循环中, 每次只apply一个log entry
 且raft并没有持久化当前apply了哪些信息, 当crash后, server会从0开始逐个apply log, 在日志中会看到巨量连续的apply信息
-![](Lab3.assets/image-20241227000926455.png)
+![](Lab3.assets/IMG-Lab3-20241227090012052.png)
 - 可以看到, 应该是只差一些就能及时apply, 通过测试(或许关闭日志就能pass了呢XD)
 
 fix方案1: 缩短applier的sleep间隔
+
+fix方案: TODO
+
+#### 原因2: 某一server差异过大
+
+在开启测试代码中的Log后发现, apply其实并没有那么慢, apply count = 4, 是其中一个server迟迟没有成功复制日志, 导致超时
+**Append过慢原因**: server日志差异过大, 即便实现了quickly catch up, 需要多轮(其实并不多)AppendEntriesRPC
+
+```shell
+04:06:04.616491 1(C, T63, C7, S0L402) --> [PeerState] set state to Leader, term: 63
+
+04:06:04.675757 2(F, T63, C7, S0L370) --> [LogReplication] reject AppendEntries RPC from Leader 1, 
+    args: {Term: 63, LeaderId: 1, PrevLogIndex: 402, PrevLogTerm: 59, Entries: {}, LeaderCommit: 7}, 
+    reply: {Term: 63, Success: false, XTerm: -1, XIndex: -1, XLen: 32}
+
+04:06:04.752765 2(F, T63, C7, S0L370) --> [LogReplication] reject AppendEntries RPC from Leader 1, 
+    args: {Term: 63, LeaderId: 1, PrevLogIndex: 370, PrevLogTerm: 46, Entries: {371-402}, LeaderCommit: 7}, 
+    reply: {Term: 63, Success: false, XTerm: 43, XIndex: 357, XLen: -1}
+
+04:06:05.043099 2(F, T63, C7, S0L370) --> [LogReplication] reject AppendEntries RPC from Leader 1, 
+    args: {Term: 63, LeaderId: 1, PrevLogIndex: 324, PrevLogTerm: 41, Entries: {325-402}, LeaderCommit: 7}, 
+    reply: {Term: 63, Success: false, XTerm: 38, XIndex: 281, XLen: -1}
+
+04:06:05.249004 2(F, T63, C7, S0L370) --> [LogReplication] reject AppendEntries RPC from Leader 1, 
+    args: {Term: 63, LeaderId: 1, PrevLogIndex: 280, PrevLogTerm: 35, Entries: {281-402}, LeaderCommit: 7}, 
+    reply: {Term: 63, Success: false, XTerm: 32, XIndex: 204, XLen: -1}
+
+04:06:05.727440 2(F, T63, C7, S0L370) --> [LogReplication] reject AppendEntries RPC from Leader 1, 
+    args: {Term: 63, LeaderId: 1, PrevLogIndex: 203, PrevLogTerm: 33, Entries: {204-402}, LeaderCommit: 7}, 
+    reply: {Term: 63, Success: false, XTerm: 29, XIndex: 141, XLen: -1}
+
+04:06:05.958397 2(F, T63, C7, S0L370) --> [PeerState] set state to Candidate, term: 63->64
+# 导致Leader重置matchIndex&nextIndex 
+04:06:06.384125 1(C, T65, C7, S0L402) --> [PeerState] set state to Leader, term: 65
+
+```
+
+fix方案: 
