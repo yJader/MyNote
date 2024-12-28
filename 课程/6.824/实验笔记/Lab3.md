@@ -847,7 +847,8 @@ fix方案: TODO
 进一步分析: 
 - 统计每次完成对某一server的日志复制的最终耗时和apply耗时, 研究瓶颈究竟出在哪里
 
-暂时的fix方案: 
+#### 暂时的fix方案1
+
 - 使用连续apply, 在每次apply之后发送一个空的ApplyMsg, 用于阻塞连续的apply, 然后检查Snapshot是否更新, 如果有, break以优先apply snapshot
 ```go
 func (rf *Raft) applyLogEntries(lastIncludedIndex int) {
@@ -882,4 +883,13 @@ func (rf *Raft) applyLogEntries(lastIncludedIndex int) {
 
 - 还真有效(显著降低了超时频率)
 ![](Lab3.assets/IMG-Lab3-20241228220634294.png)
+
+#### 关于选举超时
+
+> 溯源到3A了...
+
+**原因**: 当时为了省事(倒计时实现麻烦), 并没有严格的实现重置超时倒计时, 而是用flag标记, 然后在ticker中以ELECTION_TIMEOUT_RANGE之间随机sleep, 每次检查flag
+**后果**: 这样可能会导致实际超时时间<选举超时时间
+- 在3A, 3B, 未实现Snapshot的3C中并不会带来较大的问题, 因为重新选举的代价还不够大, 在完成3D, 进行回归测试才暴露
+
 
