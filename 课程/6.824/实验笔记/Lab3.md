@@ -848,4 +848,38 @@ fix方案: TODO
 - 统计每次完成对某一server的日志复制的最终耗时和apply耗时, 研究瓶颈究竟出在哪里
 
 暂时的fix方案: 
-- 使用连续apply, 在每次apply之后
+- 使用连续apply, 在每次apply之后发送一个空的ApplyMsg, 用于阻塞连续的apply, 然后检查Snapshot是否更新, 如果有, break以优先apply snapshot
+```go
+func (rf *Raft) applyLogEntries(lastIncludedIndex int) {
+	rf.mu.RLock()
+	startIndex := rf.applier.lastAppliedIndex + 1
+	endIndex := rf.commitIndex
+
+	appliedEntries := make(LogEntries, endIndex-startIndex+1)
+	copy(appliedEntries, rf.getEntriesLogByIndex(startIndex, endIndex))
+	rf.mu.RUnlock() // applyCh可能会阻塞, 所以提前释放锁
+
+	for _, entry := range appliedEntries {
+		rf.applyCh <- ApplyMsg{
+			CommandValid: true,
+			Command:      entry.Command,
+			CommandIndex: entry.Index,
+		}
+		rf.applier.lastAppliedIndex = entry.Index
+		// 发送一个空消息, 通过ch来阻塞当前的apply, 实现快照apply的检测
+		rf.applyCh <- ApplyMsg{}
+		// 检查是否需要apply快照
+		rf.mu.RLock()
+		if rf.snapshot.LastIncludedIndex > lastIncludedIndex {
+			rf.mu.RUnlock()
+			break
+		} else {
+			rf.mu.RUnlock()
+		}
+	}
+}
+```
+
+- 还真有效(显著降低了超时频率)
+![](Lab3.assets/IMG-Lab3-20241228220634294.png)
+
