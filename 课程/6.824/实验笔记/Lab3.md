@@ -804,6 +804,7 @@ type RaftSnapshot struct {
 且raft并没有持久化当前apply了哪些信息, 当crash后, server会从0开始逐个apply log, 在日志中会看到巨量连续的apply信息
 ![](Lab3.assets/IMG-Lab3-20241227090012052.png)
 - 可以看到, 应该是只差一些就能及时apply, 通过测试(或许关闭日志就能pass了呢XD)
+- 经过测试, 如果改回使用连续apply, 则可以顺利通过测试(变成1/20000了)
 
 fix方案1: 缩短applier的sleep间隔
 
