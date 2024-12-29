@@ -882,7 +882,7 @@ func (rf *Raft) applyLogEntries(lastIncludedIndex int) {
 ```
 
 - 还真有效(显著降低了超时频率)
-![](Lab3.assets/IMG-Lab3-20241228220634294.png)
+![](Lab3.assets/IMG-Lab3-20241229163421047.png)
 
 #### 关于选举超时
 
