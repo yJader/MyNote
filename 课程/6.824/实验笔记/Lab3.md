@@ -847,7 +847,7 @@ fix方案: TODO
 进一步分析: 
 - 统计每次完成对某一server的日志复制的最终耗时和apply耗时, 研究瓶颈究竟出在哪里
 
-#### 暂时的fix方案1
+#### fix方案1: 连续apply的取巧
 
 - 使用连续apply, 在每次apply之后发送一个空的ApplyMsg, 用于阻塞连续的apply, 然后检查Snapshot是否更新, 如果有, break以优先apply snapshot
 ```go
@@ -893,3 +893,13 @@ func (rf *Raft) applyLogEntries(lastIncludedIndex int) {
 - 在3A, 3B, 未实现Snapshot的3C中并不会带来较大的问题, 因为重新选举的代价还不够大, 在完成3D, 进行回归测试才暴露
 
 
+#### fix方案2: 在Leader上任后, 启动一次日志复制
+
+突然想到, 在之前的实现中: 
+- 心跳不会进行重试
+- Client调用Start添加日志有实现重试(`syncLogEntries()`)
+- 二者的Interval相差很大 (心跳按照3A要求, 为100ms)
+
+这会导致, 必须等待Client重发Start才会执行一轮重试较快的synchronize, 这样浪费时间, 会导致进行更多的选举
+
+**测试结果**: fail更频繁了QAQ, 可能原因是
