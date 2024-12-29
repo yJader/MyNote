@@ -892,4 +892,4 @@ func (rf *Raft) applyLogEntries(lastIncludedIndex int) {
 **后果**: 这样可能会导致实际超时时间<选举超时时间
 - 在3A, 3B, 未实现Snapshot的3C中并不会带来较大的问题, 因为重新选举的代价还不够大, 在完成3D, 进行回归测试才暴露
 
-
+![](Lab3.assets/IMG-Lab3-20241229212318809.png)
