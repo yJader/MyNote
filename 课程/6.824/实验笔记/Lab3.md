@@ -502,6 +502,28 @@ const (
 
 - 问题在于这两个函数之间, 被插入了一次心跳(将currentTerm更新为LeaderTerm), 但是startElection()之后会直接currentTerm++, 这时携带更高Term的RequestVote RPC会使得Leader降级, 影响集群稳定性
 
+### 3B-4 too many RPCs
+
+```shell
+--- FAIL: TestCount3B (7.96s)
+    test_test.go:654: too many RPCs (46) for 10 entries
+```
+
+在3D重构ticker后进行了回归测试, 发现了这一问题
+- 由于中间间断时间太长, 忘记了之前的实现细节, debug浪费了很多时间
+
+**原因**: 原本的日志复制重试操作中, RPC重试的实现并不是真正重试, 而是开一个线程去发送和处理reply, 重试线程只是sleep一段时间(50ms), 会导致发送了过量的RPC
+
+#### 可能不相关的kill bug
+在毫无头绪的添加Log后偶然发现, 在上一个go test执行cleanup()后, 某些情况下server并不会正确的被kill
+
+![](Lab3.assets/IMG-Lab3-20250101210754975.png)
+
+
+
+
+
+
 ## 3C 实现记录
 
 ### 3C-1 关于Log catch up quickly优化
