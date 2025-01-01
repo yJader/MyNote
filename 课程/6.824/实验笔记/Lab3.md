@@ -517,7 +517,7 @@ const (
 #### 可能不相关的kill bug
 在毫无头绪的添加Log后偶然发现, 在上一个go test执行cleanup()后, 某些情况下server并不会正确的被kill
 
-![](Lab3.assets/IMG-Lab3-20250101210754975.png)
+![](Lab3.assets/IMG-Lab3-20250101234930921.png)
 
 
 
