@@ -267,7 +267,16 @@ applierSnap函数中描述了启用快照功能后, 快照的调用时机
 
 #### 3D 测试结果
 
+## 测试记录
 
+### unreliable
+
+如果 `reliable` 为 `false`，`Network` 的 `processReq` 方法会模拟不可靠的网络行为，包括以下几种情况：
+
+1. **短延迟**：在处理请求之前，函数会随机延迟一段时间（0 到 26 毫秒）。
+2. **请求丢失**：有 10% 的概率请求会被丢弃，返回一个超时错误。
+3. **回复丢失**：有 10% 的概率回复会被丢弃，返回一个超时错误。
+4. **长时间重新排序**：有 60% 的概率回复会被延迟一段时间（200 到 2200 毫秒）。
 
 ## 3A实现记录
 
@@ -669,7 +678,7 @@ func (rf *Raft) sendHeartBeat(server int) {
 }
 ```
 
-## Lab3D 实现记录
+## 3D 实现记录
 
 ### 3D-1 重构LogEntry, 实现存储部分Log
 
@@ -882,7 +891,7 @@ func (rf *Raft) applyLogEntries(lastIncludedIndex int) {
 ```
 
 - 还真有效(显著降低了超时频率)
-![](Lab3.assets/IMG-Lab3-20241228220634294.png)
+![](Lab3.assets/IMG-Lab3-20241229163421047.png)
 
 #### 关于选举超时
 
@@ -891,7 +900,6 @@ func (rf *Raft) applyLogEntries(lastIncludedIndex int) {
 **原因**: 当时为了省事(倒计时实现麻烦), 并没有严格的实现重置超时倒计时, 而是用flag标记, 然后在ticker中以ELECTION_TIMEOUT_RANGE之间随机sleep, 每次检查flag
 **后果**: 这样可能会导致实际超时时间<选举超时时间
 - 在3A, 3B, 未实现Snapshot的3C中并不会带来较大的问题, 因为重新选举的代价还不够大, 在完成3D, 进行回归测试才暴露
-
 
 #### fix方案2: 在Leader上任后, 启动一次日志复制
 
@@ -903,3 +911,4 @@ func (rf *Raft) applyLogEntries(lastIncludedIndex int) {
 这会导致, 必须等待Client重发Start才会执行一轮重试较快的synchronize, 这样浪费时间, 会导致进行更多的选举
 
 **测试结果**: fail更频繁了QAQ, 可能原因是
+![](Lab3.assets/IMG-Lab3-20241229212318809.png)
