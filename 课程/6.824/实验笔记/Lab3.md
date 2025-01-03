@@ -119,7 +119,7 @@ $
 
 每行“Passed”后面跟着五个数字；这些数字分别代表测试所花费的时间（秒）、Raft节点的数量、测试期间发送的RPC数量、RPC消息的总字节数以及Raft报告的已提交的日志条目数量。您的数字可能会与这里显示的不同。如果您愿意，可以忽略这些数字，但它们可以帮助您检查实现发送的RPC数量是否合理。对于实验室作业3、4和5，如果所有测试（`go test`）的总时间超过600秒，或者任何单个测试的时间超过120秒，评分脚本将判定您的解决方案不合格。
 
-在评估您的提交时，我们将不会使用 `-race` 标志来运行测试。然而，您应该确保您的代码始终能够通过带有 `-race` 标志的测试。这样可以确保您的代码没有竞争条件，并且在多线程环境下也能正确运行。
+在评估您的提交时，我们将不会使用 `-race` 标志来运行测试。然而，您应该确保您的代码始终能够通过带有 `-race` 标志的测试。这样可以确保您的代码没有竞争条件，并且在多协程环境下也能正确运行。
 
 #### 3A 测试结果
 
@@ -397,19 +397,19 @@ raft论文中的心跳机制为: 当收到Leader心跳时, Follower重置选举�
 
 ##### 关于并发的Data Race问题
 
-问题背景: 心跳需要并行发送(通过在for中创建线程实现), 且主线程不等待发送线程
+问题背景: 心跳需要并行发送(通过在for中创建协程实现), 且主协程不等待发送协程
 情况描述:
 
-- 在前一版本中, 心跳请求在线程中发送, 需要通过访问共享资源来构造请求args
-- 但是在主线程创建线程的for循环结束后, 就会解锁, 此时有概率go的请求args构造还没完成, 导致data race
+- 在前一版本中, 心跳请求在协程中发送, 需要通过访问共享资源来构造请求args
+- 但是在主协程创建协程的for循环结束后, 就会解锁, 此时有概率go的请求args构造还没完成, 导致data race
 
-解决方案: 将构造请求在for中完成, 而非在线程中实现
+解决方案: 将构造请求在for中完成, 而非在协程中实现
 
 ### 并发bug(在3B中发现)
 
 **问题情况:**  
 
-1. S0选举超时, 开启线程(go rf.startElection())进行选举
+1. S0选举超时, 开启协程(go rf.startElection())进行选举
 2. startElection()选举需要获取锁, 但是此时锁被RequestVote RPC占用, 并且此时投票给其他Server
 3. RequestVote RPC返回, 但是startElection并没有校验term, 从而错误地发起一次选举
 
@@ -421,7 +421,7 @@ func (rf *Raft) electionTimeoutTicker() {
 
   // Your code here (3A)
   // Check if a leader election should be started.
-  // TODO 可能会开启过多的选举线程, 导致状态出现问题
+  // TODO 可能会开启过多的选举协程, 导致状态出现问题
   rf.mu.Lock()
   switch rf.state {
   case Follower:
@@ -450,9 +450,9 @@ func (rf *Raft) electionTimeoutTicker() {
 
 ```
 
-开启了过多的选举线程, 而且在选举发送完RPC, 统计选票期间会解锁(为了接收其他节点的RPC), 但是这时候可能会有新的选举线程开启, 导致状态出现问题
+开启了过多的选举协程, 而且在选举发送完RPC, 统计选票期间会解锁(为了接收其他节点的RPC), 但是这时候可能会有新的选举协程开启, 导致状态出现问题
 
-- 注1: 从Log中观察到的情况是Follower->Leader, 分析认为是两个线程, 一个导致Candidate->Follower, 另一个在等待投票结束后->Leader, 但是没有找到具体的原因
+- 注1: 从Log中观察到的情况是Follower->Leader, 分析认为是两个协程, 一个导致Candidate->Follower, 另一个在等待投票结束后->Leader, 但是没有找到具体的原因
 
 解决方案: 在接收选票后, 检查自身的state和Term是否变化, 保证正确性
 
@@ -465,13 +465,13 @@ func (rf *Raft) electionTimeoutTicker() {
 ### 3B-1 heartbeatTicker错误
 >
 > 在3A中未检测出来
-> 原先逻辑为: 先发送心跳, 再检测自身是否为Leader, 如果不是, go heartbeatTicker()线程结束, 如果是, sleep HEARTBEAT_INTERVAL后再次发送心跳
+> 原先逻辑为: 先发送心跳, 再检测自身是否为Leader, 如果不是, go heartbeatTicker()协程结束, 如果是, sleep HEARTBEAT_INTERVAL后再次发送心跳
 
 但是检测过慢, 如果sleep期间, 自身降级为Follower, 还会发出一次错误的心跳 (导致了一些看晕了的bug, 甚至开始怀疑RPC的正确性)
 
 ### 3B-2 奇怪的DataRace
 
-go的切片如果使用的是 args.entries = rf.log[i:j], 获取到的切片依然引用原始的底层数组, 这意味着如果在其他线程中修改/读了entries, 会导致DataRace
+go的切片如果使用的是 args.entries = rf.log[i:j], 获取到的切片依然引用原始的底层数组, 这意味着如果在其他协程中修改/读了entries, 会导致DataRace
 
 ### 3B-3 选举超时时间过短
 
@@ -512,7 +512,7 @@ const (
 在3D重构ticker后进行了回归测试, 发现了这一问题
 - 由于中间间断时间太长, 忘记了之前的实现细节, debug浪费了很多时间
 
-**原因**: 原本的日志复制重试操作中, RPC重试的实现并不是真正重试, 而是开一个线程去发送和处理reply, 重试线程只是sleep一段时间(50ms), 会导致发送了过量的RPC
+**原因**: 原本的日志复制重试操作中, RPC重试的实现并不是真正重试, 而是开一个协程去发送和处理reply, 重试协程只是sleep一段时间(50ms), 会导致发送了过量的RPC
 
 #### 可能不相关的kill bug
 在毫无头绪的添加Log后偶然发现, 在上一个go test执行cleanup()后, 某些情况下server并不会正确的被kill
@@ -550,7 +550,7 @@ const (
 - ....
 
 对于这个情况, 在3B的实现中, 每次重试都会检查自己是否还是Leader & 更新args(是否变为无日志的心跳), 并主动退出, **保证了正确性**
-但是如果Follower与Leader的差距过大, 会导致许多次并行重试(时间点A, B, C...启动的handleAppendEntrirs线程都进行重试), 造成浪费
+但是如果Follower与Leader的差距过大, 会导致许多次并行重试(时间点A, B, C...启动的handleAppendEntrirs协程都进行重试), 造成浪费
 
 - 期间还可能因为重试过多导致心跳失败, 产生一轮无意义的选举(没有实现Log catch up quikly优化)
 - 在实现串行化重试后, 进行3B测试, 发现如果不实现Log catch up quikly优化, 会导致超时, 无法通过测试(在未实现时, 因为并行重试, 会让nextIndex--的速度更快, 能够通过测试)
@@ -625,10 +625,10 @@ func (rf *Raft) handleAppendEntries(server int, args *AppendEntriesArgs) {
 func (rf *Raft) replicateLogEntries(server int, term int) {
  sendTimes := 0
  beginTime := time.Now()
- // 设置重试标志, 防止其他线程重复发送
+ // 设置重试标志, 防止其他协程重复发送
  rf.mu.Lock()
  if rf.retrying[server] {
-  // 有其他线程正在重发, 放弃本次日志复制
+  // 有其他协程正在重发, 放弃本次日志复制
   defer rf.mu.Unlock()
   return
  } else {
@@ -729,7 +729,7 @@ graph
 
 fix方案1: 异步commit, 简单的用go func()去apply, 发现会因为异步导致apply顺序错误, 不能通过测试
 
-fix方案2: 在server中用一个线程专门执行apply, 而不是像之前实现的, 在commit时手动apply
+fix方案2: 在server中用一个协程专门执行apply, 而不是像之前实现的, 在commit时手动apply
 
 ### 3D-3 snapshot交互逻辑
 
@@ -939,16 +939,16 @@ func (rf *Raft) applyLogEntries(lastIncludedIndex int) {
 
 #### 倒计时优化
 
-#### replicator线程
+#### replicator协程
 
 原实现: 
-- 每次Start后都启动一个线程进行日志的复制
-- 后来发现启动过多线程会导致发送过多的RPC, 改为单线程重试, 重试后发现发送的是heartbeat时, 退出
+- 每次Start后都启动一个协程进行日志的复制
+- 后来发现启动过多协程会导致发送过多的RPC, 改为单协程重试, 重试后发现发送的是heartbeat时, 退出
 
 重构原因: 
-- 这样每次还需要创建线程, 导致不必要的开销
+- 这样每次还需要创建协程, 导致不必要的开销
 
 重构计划: 
-- 在server启动时就创建n-1个replicator线程(n为server个数), 通过heartbeatTicker/Start通知replicator进行无限重试的日志复制
+- 在server启动时就创建n-1个replicator协程(n为server个数), 通过heartbeatTicker/Start通知replicator进行无限重试的日志复制
 - heartbeatTicker通知情形: 当需要日志复制时, 通知replicator; 当为无日志的heartbeat时, 直接发送
 - 通知的实现: 条件变量`Signal()` & `Wait()`
