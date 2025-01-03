@@ -278,6 +278,8 @@ applierSnap函数中描述了启用快照功能后, 快照的调用时机
 3. **回复丢失**：有 10% 的概率回复会被丢弃，返回一个超时错误。
 4. **长时间重新排序**：有 60% 的概率回复会被延迟一段时间（200 到 2200 毫秒）。
 
+备注: reliable时, RPC耗时约为1ms
+
 ## 3A实现记录
 
 ### RequestVote
@@ -955,5 +957,30 @@ func (rf *Raft) applyLogEntries(lastIncludedIndex int) {
 - heartbeatTicker通知情形: 当需要日志复制时, 通知replicator; 当为无日志的heartbeat时, 直接发送
 - 通知的实现: 条件变量`Signal()` & `Wait()`
 
+##### 不能及时处理重连server
+
+```shell
+--- FAIL: TestFailNoAgree3B (3.44s)
+    test_test.go:347: leader2(0) rejected Start()
+```
+- rejected Start()是因为正在进行一轮选举
+
+当未完成日志复制的server断连时, replicator和的RPC会超时(约2s), 并无限重试
+- 同样的, 断连server的RequestVote也会超时
+但是在测试中, server重连后, 某些情况下(概率3/500)不能及时重发RPC, 并获取到回复, 以进行一轮选举
+
+fix方案: RequestVoteRPC发送fail时, 设置reply为拒绝
+- RequestVote实现时设置为无限重试, 这可能导致了阻塞
 #### vote优化
 
+抽出了Vote相关状态为VoteState, 并封装了一些方法
+```go
+type VoteState struct {
+	replyCh     chan *RequestVoteReply
+	voteEndFlag bool
+	rwmu        sync.RWMutex
+}
+```
+
+同时, 在RequestVote接收到高term的reply时, 保持Candidate状态, 并更新term(但不重置ElectionTimeout)
+- 备注: 这样才是正确的操作
