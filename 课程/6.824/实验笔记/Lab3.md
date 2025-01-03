@@ -934,3 +934,21 @@ func (rf *Raft) applyLogEntries(lastIncludedIndex int) {
 
 **测试结果**: fail更频繁了QAQ, 可能原因是
 ![](Lab3.assets/IMG-Lab3-20241229212318809.png)
+
+### 重构
+
+#### 倒计时优化
+
+#### replicator线程
+
+原实现: 
+- 每次Start后都启动一个线程进行日志的复制
+- 后来发现启动过多线程会导致发送过多的RPC, 改为单线程重试, 重试后发现发送的是heartbeat时, 退出
+
+重构原因: 
+- 这样每次还需要创建线程, 导致不必要的开销
+
+重构计划: 
+- 在server启动时就创建n-1个replicator线程(n为server个数), 通过heartbeatTicker/Start通知replicator进行无限重试的日志复制
+- heartbeatTicker通知情形: 当需要日志复制时, 通知replicator; 当为无日志的heartbeat时, 直接发送
+- 通知的实现: 条件变量`Signal()` & `Wait()`
