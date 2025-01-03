@@ -937,6 +937,8 @@ func (rf *Raft) applyLogEntries(lastIncludedIndex int) {
 
 ### 重构
 
+> 在实现3D, 发现性能不足后, 进行了无止境的重构(与FAIL)
+
 #### 倒计时优化
 
 #### replicator协程
@@ -952,3 +954,6 @@ func (rf *Raft) applyLogEntries(lastIncludedIndex int) {
 - 在server启动时就创建n-1个replicator协程(n为server个数), 通过heartbeatTicker/Start通知replicator进行无限重试的日志复制
 - heartbeatTicker通知情形: 当需要日志复制时, 通知replicator; 当为无日志的heartbeat时, 直接发送
 - 通知的实现: 条件变量`Signal()` & `Wait()`
+
+#### vote优化
+
