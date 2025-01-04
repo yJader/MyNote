@@ -972,7 +972,7 @@ func (rf *Raft) applyLogEntries(lastIncludedIndex int) {
 
 fix方案: RequestVoteRPC发送fail时, 设置reply为拒绝投票
 - RequestVote实现时设置为无限重试, 这可能导致了阻塞
-- 测试结果: ![](Lab3.assets/IMG-Lab3-20250104132115462.png)
+- 测试结果: ![](Lab3.assets/IMG-Lab3-20250104152158311.png)
 - 还真是这样: ~~怎么这种细节也会影响测试啊~~
 
 
