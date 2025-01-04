@@ -1035,6 +1035,11 @@ heartbeat的发送:
 在当时考虑到并行发送会带来不必要的RPC(因为在[TestCount3B翻车](#3B-4%20too%20many%20RPCs)), 所以在重构为replicator时并没有并行发送
 但是在TestFigure8Unreliable3C中, 心跳如果只是通过replicator单线程发送, 不可靠的网络会导致无法通过测试
 
+#### ELectionTimeout的设置
+
+![](Lab3.assets/IMG-Lab3-20250105011548159.png)
+
+
 ### 重构总结
 
 - 重构带来的性能提升可能并不是很大, 主要是让代码更加的简洁易懂
