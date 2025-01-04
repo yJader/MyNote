@@ -937,13 +937,13 @@ func (rf *Raft) applyLogEntries(lastIncludedIndex int) {
 **测试结果**: fail更频繁了QAQ, 可能原因是
 ![](Lab3.assets/IMG-Lab3-20241229212318809.png)
 
-### 重构
+## 重构
 
 > 在实现3D, 发现性能不足后, 进行了无止境的重构(与FAIL)
 
-#### 倒计时优化
+### 倒计时优化
 
-#### replicator协程
+### replicator协程
 
 原实现: 
 - 每次Start后都启动一个协程进行日志的复制
@@ -957,7 +957,7 @@ func (rf *Raft) applyLogEntries(lastIncludedIndex int) {
 - heartbeatTicker通知情形: 当需要日志复制时, 通知replicator; 当为无日志的heartbeat时, 直接发送
 - 通知的实现: 条件变量`Signal()` & `Wait()`
 
-##### leader2 rejected Start()
+#### leader2 rejected Start()
 
 ```shell
 # 出现频率约为3/500
@@ -976,7 +976,7 @@ fix方案: RequestVoteRPC发送fail时, 设置reply为拒绝投票
 - 还真是这样: ~~怎么这种细节也会影响测试啊~~
 
 
-#### vote优化
+### vote优化
 
 抽出了Vote相关状态为VoteState, 并封装了一些方法
 ```go
@@ -989,3 +989,26 @@ type VoteState struct {
 
 同时, 在RequestVote接收到高term的reply时, 保持Candidate状态, 并更新term(但不重置ElectionTimeout)
 - 备注: 这样才是正确的操作
+
+### TestFigure8Unreliable3C
+
+```shell
+--- FAIL: TestFigure8Unreliable3C (39.75s)
+    config.go:635: one(2790, 17) failed to reach agreement
+```
+在网络不可靠, 且server之间差异较大的情况下, 对日志复制和选举的效率有更高的要求, 可能需要更多的优化
+
+#### Leader的ElectionTimeoutReset
+
+Leader的electionTimeoutTicker会被阻塞, 直到自身不再是Leader
+- 旧版的实现: 在Leader->Follower时, 重置选举超时时间, 重启ticker
+- 优化: 在Leader发送Heartbeat时, 也对自身的超时时间进行重置
+
+优化说明: 
+- 网络不可靠带来的问题是: 某些Follower可能不能按时收到Leader的RPC, 导致触发选举, 进而导致: 
+	1. 一个选举时间的服务不可用
+	2. 打断旧Leader的日志复制进度, 下一个Leader需要重新开始日志的catch up
+- 优化缩短了旧Leader超时时间, 使得它有更高的概率能够上位
+
+测试结果: FAIL率由15/160 降为 5/160, **有效**
+
