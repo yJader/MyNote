@@ -957,9 +957,10 @@ func (rf *Raft) applyLogEntries(lastIncludedIndex int) {
 - heartbeatTicker通知情形: 当需要日志复制时, 通知replicator; 当为无日志的heartbeat时, 直接发送
 - 通知的实现: 条件变量`Signal()` & `Wait()`
 
-##### 不能及时处理重连server
+##### leader2 rejected Start()
 
 ```shell
+# 出现频率约为3/500
 --- FAIL: TestFailNoAgree3B (3.44s)
     test_test.go:347: leader2(0) rejected Start()
 ```
@@ -969,8 +970,12 @@ func (rf *Raft) applyLogEntries(lastIncludedIndex int) {
 - 同样的, 断连server的RequestVote也会超时
 但是在测试中, server重连后, 某些情况下(概率3/500)不能及时重发RPC, 并获取到回复, 以进行一轮选举
 
-fix方案: RequestVoteRPC发送fail时, 设置reply为拒绝
+fix方案: RequestVoteRPC发送fail时, 设置reply为拒绝投票
 - RequestVote实现时设置为无限重试, 这可能导致了阻塞
+- 测试结果: ![](Lab3.assets/IMG-Lab3-20250104132115462.png)
+- 还真是这样: ~~怎么这种细节也会影响测试啊~~
+
+
 #### vote优化
 
 抽出了Vote相关状态为VoteState, 并封装了一些方法
