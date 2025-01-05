@@ -984,10 +984,14 @@ func (rf *Raft) applyLogEntries(lastIncludedIndex int) {
 - 同样的, 断连server的RequestVote也会超时
 但是在测试中, server重连后, 某些情况下(概率3/500)不能及时重发RPC, 并获取到回复, 以进行一轮选举
 
-fix方案: RequestVoteRPC发送fail时, 设置reply为拒绝投票
+**fix方案**: RequestVoteRPC发送fail时, 设置reply为拒绝投票
 - RequestVote实现时设置为无限重试, 这可能导致了阻塞
 - 测试结果: ![](Lab3.assets/IMG-Lab3-20250104152158311.png)
 - 还真是这样: ~~怎么这种细节也会影响测试啊~~
+
+**更新**: 但不进行重试也会导致一些偶然的fail
+![](Lab3.assets/IMG-Lab3-20250105200448066.png)
+- 改为尝试发送三次试试
 
 
 ### vote优化
@@ -1041,6 +1045,8 @@ heartbeat的发送:
 
 
 ### 重构总结
+![](Lab3.assets/IMG-Lab3-20250105193405214.png)
+
 
 - 重构带来的性能提升可能并不是很大, 主要是让代码更加的简洁易懂
 - 这次重构中测试FAIL的部分最终发现都是因为重构过程中没有思考, 顺手改了细节导致的
