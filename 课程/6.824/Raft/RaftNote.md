@@ -185,13 +185,13 @@ server的三种状态: ***leade, follower, or candidate***
 - candidate: 用于选举leader
 
 ```mermaid
-flowchart LR
-	0((开始)) --> 1([Follower])
-	1 --"term到期, 开始选举"--> 2([Candidate])
-	2 --"赢得选举\n(获得大部分选票)"--> 3([Leader])
-	2 --"超时, 重新选举"--> 2
-	2 --"发现当前Leader, \nor落选or发现高term"--> 1
-	3 -- "发现其他server有更高的term" --> 1
+flowchart TD
+    Start((开始)) --> Follower([Follower])
+    Follower -- "term到期\n开始选举" --> Candidate([Candidate])
+    Candidate -- "赢得选举\n(获得大部分选票)" --> Leader([Leader])
+    Candidate -- "超时\n重新选举" --> Candidate
+    Candidate -- "发现当前Leader\n或落选\n或发现更高term" --> Follower
+    Leader -- "发现其他server\n有更高的term" --> Follower
 ```
 
 
