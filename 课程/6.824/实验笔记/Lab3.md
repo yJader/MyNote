@@ -504,27 +504,6 @@ const (
 
 - 问题在于这两个函数之间, 被插入了一次心跳(将currentTerm更新为LeaderTerm), 但是startElection()之后会直接currentTerm++, 这时携带更高Term的RequestVote RPC会使得Leader降级, 影响集群稳定性
 
-### 3B-4 too many RPCs
-
-```shell
---- FAIL: TestCount3B (7.96s)
-    test_test.go:654: too many RPCs (46) for 10 entries
-```
-
-在3D重构ticker后进行了回归测试, 发现了这一问题
-- 由于中间间断时间太长, 忘记了之前的实现细节, debug浪费了很多时间
-
-**原因**: 原本的日志复制重试操作中, RPC重试的实现并不是真正重试, 而是开一个协程去发送和处理reply, 重试协程只是sleep一段时间(50ms), 会导致发送了过量的RPC
-
-#### 可能不相关的kill bug
-在毫无头绪的添加Log后偶然发现, 在上一个go test执行cleanup()后, 某些情况下server并不会正确的被kill
-
-![](Lab3.assets/IMG-Lab3-20250101234930921.png)
-
-
-
-
-
 
 ## 3C 实现记录
 
@@ -937,13 +916,47 @@ func (rf *Raft) applyLogEntries(lastIncludedIndex int) {
 **测试结果**: fail更频繁了QAQ, 可能原因是
 ![](Lab3.assets/IMG-Lab3-20241229212318809.png)
 
-### 重构
+## 重构
 
 > 在实现3D, 发现性能不足后, 进行了无止境的重构(与FAIL)
 
-#### 倒计时优化
+### 倒计时优化
 
-#### replicator协程
+旧实现:
+- ElectionTimeoutTicker: 每次检查resetTimeoutFlag, 然后随机sleep一个ElectionTimeoutInterval
+- 重置ElectionTimeout: 设置resetTimeoutFlag=true
+
+旧实现的问题: 通过设置flag的方式, 可能会导致timeout时间不准确
+- 说明: 如果在sleep刚开始时设置flag=true, 超时时间会延长到2个ElectionTimeoutInterval
+
+新实现:
+- ElectionTimeoutTicker: 每50ms~350ms检查一次lastReceivedHeartbeatTime~Now的时间差是否>electionTimeoutDuration
+	- yes: 随机一个electionTimeoutDuration, 开始一次选举
+	- no: 等待下一次检查
+- 重置ElectionTimeout: 更新lastReceivedHeartbeatTime
+
+#### 3B-4 too many RPCs
+
+```shell
+--- FAIL: TestCount3B (7.96s)
+    test_test.go:654: too many RPCs (46) for 10 entries
+```
+
+在重构ticker后进行了回归测试, 发现了这一问题
+- 由于中间间断时间太长, 忘记了之前的实现细节, debug浪费了很多时间
+
+**原因**: 原本的日志复制重试操作中, RPC重试的实现并不是真正重试, 而是开一个协程去
+发送和处理reply, 重试协程只是sleep一段时间(50ms), 会导致发送了过量的RPC
+- fix方案如上所示
+
+#### 可能不相关的kill bug
+在毫无头绪的添加Log后偶然发现, 在上一个go test执行cleanup()后, 某些情况下server并不会正确的被kill
+![](Lab3.assets/IMG-Lab3-20250101234930921.png)
+最后发现是因为这时候收到了超时的RPC回复, 所以打印了日志, 可以忽略
+
+
+
+### replicator协程
 
 原实现: 
 - 每次Start后都启动一个协程进行日志的复制
@@ -954,10 +967,11 @@ func (rf *Raft) applyLogEntries(lastIncludedIndex int) {
 
 重构计划: 
 - 在server启动时就创建n-1个replicator协程(n为server个数), 通过heartbeatTicker/Start通知replicator进行无限重试的日志复制
-- heartbeatTicker通知情形: 当需要日志复制时, 通知replicator; 当为无日志的heartbeat时, 直接发送
+- ~~heartbeatTicker通知情形: 当需要日志复制时, 通知replicator; 当为无日志的heartbeat时, 并行发送~~
+- [HeartbeatTicker](#Heartbeat阻塞问题): 不走replicator, 直接每100ms并行发送RPC
 - 通知的实现: 条件变量`Signal()` & `Wait()`
 
-##### leader2 rejected Start()
+#### leader2 rejected Start()
 
 ```shell
 # 出现频率约为3/500
@@ -970,13 +984,17 @@ func (rf *Raft) applyLogEntries(lastIncludedIndex int) {
 - 同样的, 断连server的RequestVote也会超时
 但是在测试中, server重连后, 某些情况下(概率3/500)不能及时重发RPC, 并获取到回复, 以进行一轮选举
 
-fix方案: RequestVoteRPC发送fail时, 设置reply为拒绝投票
+**fix方案**: RequestVoteRPC发送fail时, 设置reply为拒绝投票
 - RequestVote实现时设置为无限重试, 这可能导致了阻塞
 - 测试结果: ![](Lab3.assets/IMG-Lab3-20250104152158311.png)
 - 还真是这样: ~~怎么这种细节也会影响测试啊~~
 
+**更新**: 但不进行重试也会导致一些偶然的fail
+![](Lab3.assets/IMG-Lab3-20250105200448066.png)
+- 改为尝试发送三次试试
 
-#### vote优化
+
+### vote优化
 
 抽出了Vote相关状态为VoteState, 并封装了一些方法
 ```go
@@ -989,3 +1007,47 @@ type VoteState struct {
 
 同时, 在RequestVote接收到高term的reply时, 保持Candidate状态, 并更新term(但不重置ElectionTimeout)
 - 备注: 这样才是正确的操作
+
+### TestFigure8Unreliable3C
+
+```shell
+--- FAIL: TestFigure8Unreliable3C (39.75s)
+    config.go:635: one(2790, 17) failed to reach agreement
+```
+在网络不可靠, 且server之间差异较大的情况下, 对日志复制和选举的效率有更高的要求, 可能需要更多的优化
+
+#### Leader的ElectionTimeoutReset
+
+Leader的electionTimeoutTicker会被阻塞, 直到自身不再是Leader
+- 旧版的实现: 在Leader->Follower时, 重置选举超时时间, 重启ticker
+- 优化: 在Leader发送Heartbeat时, 也对自身的超时时间进行重置
+
+优化说明: 
+- 网络不可靠带来的问题是: 某些Follower可能不能按时收到Leader的RPC, 导致触发选举, 进而导致: 
+	1. 一个选举时间的服务不可用
+	2. 打断旧Leader的日志复制进度, 下一个Leader需要重新开始日志的catch up
+- 优化缩短了旧Leader超时时间, 使得它有更高的概率能够上位
+
+测试结果: FAIL率由15/160 降为 5/160, **有效**
+
+#### Heartbeat阻塞问题
+
+heartbeat的发送: 
+- 旧实现: 当需要日志复制时, 通知replicator; 当为无日志的heartbeat时, 并行发送
+- 新实现: 不走replicator, 直接每100ms并行发送RPC
+
+在当时考虑到并行发送会带来不必要的RPC(因为在[TestCount3B翻车](#3B-4%20too%20many%20RPCs)), 所以在重构为replicator时并没有并行发送
+但是在TestFigure8Unreliable3C中, 心跳如果只是通过replicator单线程发送, 不可靠的网络会导致无法通过测试
+
+#### ELectionTimeout的设置
+
+![](Lab3.assets/IMG-Lab3-20250105011548159.png)
+
+
+### 重构总结
+![](Lab3.assets/IMG-Lab3-20250105193405214.png)
+
+
+- 重构带来的性能提升可能并不是很大, 主要是让代码更加的简洁易懂
+- 这次重构中测试FAIL的部分最终发现都是因为重构过程中没有思考, 顺手改了细节导致的
+	- 如: RPC是否要重试([RequestVote](#leader2%20rejected%20Start())), RPC应该并行发送还是阻塞([TestCount3B](#3B-4%20too%20many%20RPCs))...
