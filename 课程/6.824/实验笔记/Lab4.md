@@ -47,7 +47,7 @@
 当你**可靠地**通过测试套件中的第一个测试：“One client(TestBasic4A)”时，你就完成了这个任务。
 
 > **Hints**: 
-- 在调用 `Start()` 之后，你的 kvservers 将需要等待 Raft 完成协议。已达成协议的命令会出现在 `applyCh` 上。你的代码将需要继续读取 `applyCh`，同时 `Put()`、`Append()` 和 `Get()` 处理程序使用 `Start()` 将命令提交给 Raft 日志。注意 kvserver 与其 Raft 库之间的死锁。
+> - 在调用 `Start()` 之后，你的 kvservers 将需要等待 Raft 完成协议。已达成协议的命令会出现在 `applyCh` 上。你的代码将需要继续读取 `applyCh`，同时 `Put()`、`Append()` 和 `Get()` 处理程序使用 `Start()` 将命令提交给 Raft 日志。注意 kvserver 与其 Raft 库之间的死锁。
 > - 如果 kvserver 不是大多数的一部分（因此不会提供陈旧数据），则不应完成 `Get()` RPC。一个简单的解决方案是将每个 `Get()`（以及每个 `Put()` 和 `Append()`）输入 Raft 日志。你不需要实现第 8 节中描述的只读操作的优化。
 > - 你不需要向 Raft `ApplyMsg` 或 Raft RPC（如 `AppendEntries`）添加任何字段，但你可以这样做。
 > - 最好从一开始就添加Lock，因为避免死锁的需要有时会影响整体代码设计。使用 `go test -race` 检查你的代码是否无竞争。
@@ -108,10 +108,12 @@ C4 --"G/P/A"--> ServerB
 C5 --"G/P/A"--> ServerB
 C6 --"G/P/A"--> ServerB
 
-ServerA --"记录操作"--> RaftLeader
-ServerB --"记录操作"--> RaftLeader
+ServerA <--"写入Op / 应用Op"--> RaftGroup
+ServerB <--"写入Op / 应用Op"--> RaftGroup
 
-RaftLeader --"日志复制"--> RaftFollower1
-RaftLeader --"日志复制"--> RaftFollower2
 ```
 lab4是分布式容错的kvserver, 有多个server, 使用lab3实现的raft来达成共识
+
+检查代码发现: 
+- 每个kvserver创建时会获得raft集群的ClientEnd, 并创建一个Raft节点
+- 所以kvserver数=raft节点数, 每个kvserver可以通过applyCh来消费已提交的Log
