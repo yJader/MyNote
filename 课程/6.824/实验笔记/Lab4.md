@@ -81,3 +81,37 @@
 > - 快照中存储的结构的所有字段都应该大写。
 > - 本实验可能会暴露你 Raft 库中的错误。如果你对 Raft 实现进行了更改，请确保它继续通过所有实验 3 的测试。
 > - 合适的实验 4 测试时间是 400 秒的实际时间和 700 秒的 CPU 时间。此外，`go test -run TestSnapshotSize` 应该在不到 20 秒的实际时间内完成。
+
+
+## 4A 实现记录
+
+> 拖了太久, 还得复习一下lab2的内容...
+
+
+```mermaid
+graph TD
+
+Clerk1 --"G/P/A"--> Server
+Clerk2 --"G/P/A"--> Server
+Clerk3 --"G/P/A"--> Server
+```
+图中的Clerk1, Clerk2, Clerk3请求是并发的, lab2要实现的是不同Clerk操作之间的一致性
+
+```mermaid
+graph TD
+
+Clerk1 --"G/P/A"--> ServerA
+C2 --"G/P/A"--> ServerA
+C3 --"G/P/A"--> ServerA
+
+C4 --"G/P/A"--> ServerB
+C5 --"G/P/A"--> ServerB
+C6 --"G/P/A"--> ServerB
+
+ServerA --"记录操作"--> RaftLeader
+ServerB --"记录操作"--> RaftLeader
+
+RaftLeader --"日志复制"--> RaftFollower1
+RaftLeader --"日志复制"--> RaftFollower2
+```
+lab4是分布式容错的kvserver, 有多个server, 使用lab3实现的raft来达成共识
