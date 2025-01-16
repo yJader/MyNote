@@ -81,7 +81,7 @@ lastReplyRet map[int64]string  // 保存最后一次请求的结果, 处理重�
 
 #### Plan3
 
-不使用map存储lastReplyID, 而是使用一个数组, 用于存储每个client的lastReplyID, 通过clientID来索引
+不使用map存储lastReplyID, 而是使用一个数组, 用于存储每个client的lastReplyID, 通过clientID来索引, 这样节约了clientID这个key的空间
 
 ## 问题记录
 
