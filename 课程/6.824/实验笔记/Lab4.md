@@ -100,20 +100,24 @@ Clerk3 --"G/P/A"--> Server
 ```mermaid
 graph TD
 
-Clerk1 --"G/P/A"--> ServerA
-C2 --"G/P/A"--> ServerA
-C3 --"G/P/A"--> ServerA
+Clerk1 --"G/P/A"--> KVServerA
+C2 --"G/P/A"--> KVServerA
+C3 --"G/P/A"--> KVServerA
+C4 --"G/P/A"--> KVServerA
 
-C4 --"G/P/A"--> ServerB
-C5 --"G/P/A"--> ServerB
-C6 --"G/P/A"--> ServerB
+C4 -."not leader".-x KVServerB
 
-ServerA <--"写入Op / 应用Op"--> RaftGroup
-ServerB <--"写入Op / 应用Op"--> RaftGroup
+KVServerA --"Start()"--> RaftA("RaftA(Leader)")
+
+RaftA("RaftA(Leader)") --"applyCh"--> KVServerA
+
+KVServerB ~~~ RaftB("RaftB(Follower)")
+
+RaftB("RaftB(Follower)") --"applyCh"--> KVServerB
 
 ```
 lab4是分布式容错的kvserver, 有多个server, 使用lab3实现的raft来达成共识
 
 检查代码发现: 
 - 每个kvserver创建时会获得raft集群的ClientEnd, 并创建一个Raft节点
-- 所以kvserver数=raft节点数, 每个kvserver可以通过applyCh来消费已提交的Log
+- 所以kvserver数=raft节点数, 每个kvserver可以通过applyCh来消费已提交的Log(Command)
