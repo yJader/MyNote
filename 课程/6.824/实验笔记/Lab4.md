@@ -122,9 +122,15 @@ lab4是分布式容错的kvserver, 有多个server, 使用lab3实现的raft来�
 - 每个kvserver创建时会获得raft集群的ClientEnd, 并创建一个Raft节点
 - 所以kvserver数=raft节点数, 每个kvserver可以通过applyCh来消费已提交的Log(Command)
 
-### 如何处理Term更新
+### 如何在不可靠网络下 实现幂等性
 
-在command下发到raft后, 可能会经历一次选举, 导致term更新, 之前的command可能被新Leader强制同步导致删除, 也可能需要重新达成一致
+4A Task2中提到了这种情况: Clerk在发送请求时, 会向不同kvserver发送请求, 直到找到Leader完成请求
+但是在不可靠的网络下, kvserver1向raft发送rpc后
+
+
+### 如何处理Term更新 导致的command超时
+
+在command(Op)下发到raft后, 可能会经历一次选举, 导致term更新, 之前的command可能被新Leader强制同步导致删除, 也可能需要重新达成一致
 
 command删除: 
 - 判断方法: 同一个index的command的term不相同
@@ -133,3 +139,4 @@ command删除:
 旧Term的command一致: 
 - 不需要重发, 但是需要在新term时发送一个新command, 以达成安全的一致
 - 如果新term期间一直不发送新command, 会导致阻塞
+
