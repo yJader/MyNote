@@ -65,6 +65,14 @@
 > - 你应该使用类似于实验 2 的重复检测方案。它应该快速释放服务器内存，例如通过每个 RPC 暗示客户端已看到其上一个 RPC 的回复。可以假设客户端一次只调用 Clerk 的一个方法。你可能会发现你需要修改你在实验 2 中的重复检测表中存储的信息。
 
 
+#### 4A测试结果
+
+![](Lab4.assets/IMG-Lab4-20250128095812148.png)
+
+- 如果开了race detector, 会导致不能通过TestSpeed4A 
+  ![](Lab4.assets/IMG-Lab4-20250128095849445.png)
+
+
 
 ### Part B：带快照的键值服务
 
@@ -128,6 +136,8 @@ lab4是分布式容错的kvserver, 有多个server, 使用lab3实现的raft来�
 但是在不可靠的网络下, 旧leader在完成共识, 提交command后就fail, 导致来不及apply给上层kvserver. clerk向新leader重试, 又会发送相同的command. 
 这样在后续的apply过程中, 如果不进行处理, 会将相同的command apply两次
 
+解决方案: 在apply前进行重复command的检查
+- 通过了测试, 但是没有注意这样的操作是否有效
 
 ### 如何处理Term更新 导致的command超时
 
