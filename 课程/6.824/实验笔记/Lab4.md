@@ -149,3 +149,18 @@ command删除: 在logentry的command中加上commandID, 通过解析command信�
 - 不需要重发, 但是需要在新term时发送一个新command, 以达成安全的一致
 - 如果新term期间一直不发送新command, 会导致阻塞
 
+## 4B 实现记录
+
+### 需要持久化的信息
+
+1. kv存储(`KVStateMachine`)
+2. 客户端最后一次请求ID及其reply(`lastCommandID` 和 `lastReply`)
+3. snapshot信息(`lastIncludedIndex`)
+	- 注: 此次实验中的Raft的ApplyMsg是通过Channel发送的, 应该不会受到网络影响
+
+### 关于Raft接口要求的Raft节点状态
+
+Start: 传入Command, 达成一致后返回给Client
+- 显然只有Leader才能处理
+Snapshot: 传入log entries的index, 截断此前的log entries并创建快照
+- Follower同样可以处理, Snapshot只会删除已提交的log, 不会影响集群一致性
