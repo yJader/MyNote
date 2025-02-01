@@ -164,3 +164,8 @@ Start: 传入Command, 达成一致后返回给Client
 - 显然只有Leader才能处理
 Snapshot: 传入log entries的index, 截断此前的log entries并创建快照
 - Follower同样可以处理, Snapshot只会删除已提交的log, 不会影响集群一致性
+
+### 过于频繁的Snapshot
+
+当一个落后过多的Follower成功收到Leader的许多日志时, RaftStateSize()显然过大
+此时对于KVServer
