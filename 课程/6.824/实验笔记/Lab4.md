@@ -167,5 +167,5 @@ Snapshot: 传入log entries的index, 截断此前的log entries并创建快照
 
 ### 过于频繁的Snapshot
 
-当一个落后过多的Follower成功收到Leader的许多日志时, RaftStateSize()显然过大
-此时对于KVServer
+当一个Server的Log过大, 且正在将其apply给上层KV时, KVServer逐个接收Log, 但此时读取的RaftStateSize()是积压的, 正在apply的Log, 因此每接受到一个Log就会调用一次rf.Snapshot, 造成大量的, 无意义的(会被后面的快照覆盖)快照创建操作
+- 在restart相关测试中发现会有约300个积压的Log
