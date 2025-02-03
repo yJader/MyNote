@@ -151,7 +151,7 @@ command删除: 在logentry的command中加上commandID, 通过解析command信�
 
 ## 4B 实现记录
 
-### 需要持久化的信息
+### KVServer需要持久化的信息
 
 1. kv存储(`KVStateMachine`)
 2. 客户端最后一次请求ID及其reply(`lastCommandID` 和 `lastReply`)
@@ -169,3 +169,16 @@ Snapshot: 传入log entries的index, 截断此前的log entries并创建快照
 
 当一个Server的Log过大, 且正在将其apply给上层KV时, KVServer逐个接收Log, 但此时读取的RaftStateSize()是积压的, 正在apply的Log, 因此每接受到一个Log就会调用一次rf.Snapshot, 造成大量的, 无意义的(会被后面的快照覆盖)快照创建操作
 - 在restart相关测试中发现会有约300个积压的Log
+
+解决方案: 待定
+
+### Snapshot不一致带来的问题
+
+在实验中遇到了这样的情况: Leader的Snapshot比Follower的Snapshot更新, 在日志复制时覆盖了Follower已经Commit但是尚未apply的Log, 导致上层KVServer不能正确地将已执行的Op返回给Clerk
+
+解决方案: Follower在接收到Snapshot时, 如果有已Commit但尚未Apply, 且Index<Snapshot.LastIncludedIndex的LogEntries, 先不删除, 等到apply完成后再进行删除
+
+TODOList: 
+- [x] log切片访问方式修改
+- [ ] InstallSnapshot删除逻辑修改
+- [ ] applier添加log清理
