@@ -180,5 +180,5 @@ Snapshot: 传入log entries的index, 截断此前的log entries并创建快照
 
 TODOList: 
 - [x] log切片访问方式修改
-- [ ] InstallSnapshot删除逻辑修改
-- [ ] applier添加log清理
+- [x] InstallSnapshot删除逻辑修改
+- [x] applier添加log清理
