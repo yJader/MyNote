@@ -174,7 +174,7 @@ Snapshot: 传入log entries的index, 截断此前的log entries并创建快照
 
 ### Snapshot不一致带来的问题
 
-在实验中遇到了这样的情况: Leader的Snapshot比Follower的Snapshot更新, 在日志复制时覆盖了Follower已经Commit但是尚未apply的Log, 导致上层KVServer不能正确地将已执行的Op返回给Clerk
+在实验中遇到了这样的情况: Leader的Snapshot比Follower的Snapshot更新, 在InstallSnapshot时会删除Follower已经Commit但是尚未apply的Log, 导致上层KVServer不能正确地将已执行的Op返回给Clerk
 
 解决方案: Follower在接收到Snapshot时, 如果有已Commit但尚未Apply, 且Index<Snapshot.LastIncludedIndex的LogEntries, 复制一个副本, 等到apply完成后再进行删除
 
