@@ -1051,7 +1051,7 @@ heartbeat的发送:
 ![](Lab3.assets/IMG-Lab3-20250105011548159.png)
 
 
-### 重构总结
+### 重构小结
 
 ![](Lab3.assets/IMG-Lab3-20250105193405214.png)
 
@@ -1059,3 +1059,10 @@ heartbeat的发送:
 - 重构带来的性能提升可能并不是很大, 主要是让代码更加的简洁易懂
 - 这次重构中测试FAIL的部分最终发现都是因为重构过程中没有思考, 顺手改了细节导致的
 	- 如: RPC是否要重试([RequestVote](#leader2%20rejected%20Start())), RPC应该并行发送还是阻塞([TestCount3B](#3B-4%20too%20many%20RPCs))...
+
+### 异步Snapshot Apply
+
+
+
+![](Lab3.assets/IMG-Lab3-20250206222611942.png)
+
