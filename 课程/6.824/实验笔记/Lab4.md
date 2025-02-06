@@ -125,6 +125,7 @@ RaftB("RaftB(Follower)") --"applyCh"--> KVServerB
 
 ```
 lab4是分布式容错的kvserver, 有多个server, 使用lab3实现的raft来达成共识
+- 即: raft的Leader=kvserver的Leader
 
 检查代码发现: 
 - 每个kvserver创建时会获得raft集群的ClientEnd, 并创建一个Raft节点
@@ -170,15 +171,5 @@ Snapshot: 传入log entries的index, 截断此前的log entries并创建快照
 当一个Server的Log过大, 且正在将其apply给上层KV时, KVServer逐个接收Log, 但此时读取的RaftStateSize()是积压的, 正在apply的Log, 因此每接受到一个Log就会调用一次rf.Snapshot, 造成大量的, 无意义的(会被后面的快照覆盖)快照创建操作
 - 在restart相关测试中发现会有约300个积压的Log
 
-解决方案: 待定
+解决方案: 在applyMsg中添加一个`HaveMore`flag, 用来表示连续apply, 直到`HaveMore==false`才会执行Snapshot
 
-### Snapshot不一致带来的问题
-
-在实验中遇到了这样的情况: Leader的Snapshot比Follower的Snapshot更新, 在InstallSnapshot时会删除Follower已经Commit但是尚未apply的Log, 导致上层KVServer不能正确地将已执行的Op返回给Clerk
-
-解决方案: Follower在接收到Snapshot时, 如果有已Commit但尚未Apply, 且Index<Snapshot.LastIncludedIndex的LogEntries, 复制一个副本, 等到apply完成后再进行删除
-
-TODOList: 
-- [x] log切片访问方式修改
-- [x] InstallSnapshot删除逻辑修改
-- [x] applier添加log清理
