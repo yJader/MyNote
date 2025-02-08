@@ -173,3 +173,8 @@ Snapshot: 传入log entries的index, 截断此前的log entries并创建快照
 
 解决方案: 在applyMsg中添加一个`HaveMore`flag, 用来表示连续apply, 直到`HaveMore==false`才会执行Snapshot
 
+### 诡异的丢失log
+
+在修改为异步apply Snapshot之后, 报错缺失一部分中间的value
+检查过后发现是更换Leader后会出现这个问题, 可能是Snapshot没有正确的apply, 但是可能不是很好分析快照内容
+- 注: 下载到本地就能流畅打开了 之前纯浪费时间QAQ
