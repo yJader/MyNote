@@ -251,3 +251,6 @@ func checkValue(key string, value string) (bool, []int) {
 
 ```
 
+
+![](Lab4.assets/IMG-Lab4-20250208224457249.png)
+
