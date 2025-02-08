@@ -178,3 +178,76 @@ Snapshot: 传入log entries的index, 截断此前的log entries并创建快照
 在修改为异步apply Snapshot之后, 报错缺失一部分中间的value
 检查过后发现是更换Leader后会出现这个问题, 可能是Snapshot没有正确的apply, 但是可能不是很好分析快照内容
 - 注: 下载到本地就能流畅打开了 之前纯浪费时间QAQ
+
+因为只有出错的server成为Leader才会发现这个问题, 所以需要在kvserver中加入对value的检测和Fatal, 才能更快的定位问题
+- 有效, 从7/2000的fail率提升到36/2000
+
+破案: 异步applySnapshot没有竞争到ch, 导致先apply了后续的log, 随后拒绝了过期的Snapshot
+总结: 一次失败的重构
+
+#### 附: 检测value方法
+
+```go
+// 检测value是否符合格式，并找出缺失的数字
+func checkValue(key string, value string) (bool, []int) {
+	if RandomKey {
+		// random keys测试中, 不进行检查
+		return true, nil
+	}
+
+	// 定义正则表达式，匹配格式 "x n i y"
+	re := regexp.MustCompile(`x (\d+) (\d+) y`)
+
+	// 用正则表达式找到所有匹配的部分
+	matches := re.FindAllStringSubmatch(value, -1)
+	if len(matches) == 0 {
+		return true, nil // value为空
+	}
+
+	// 用于存储找到的数字 i
+	seen := make(map[int]bool)
+	mx := 0
+
+	key_, err := strconv.Atoi(key)
+	if err != nil {
+		return true, nil // key 不是数字, 不进行检查
+	}
+
+	// 遍历匹配结果
+	for _, match := range matches {
+		if len(match) < 3 {
+			return false, nil // 匹配结果不完整
+		}
+		k, err := strconv.Atoi(match[1])
+		if err != nil || k != key_ {
+			DPrintf("checkValue(%s, %s): key not match", key, value)
+			return false, nil
+		}
+		i, err := strconv.Atoi(match[2])
+		if err != nil {
+			return false, nil // i 不是数字
+		}
+		seen[i] = true
+		mx = max(mx, i)
+	}
+
+	// 检查是否连续
+	missing := []int{}
+	for i := 0; i <= mx; i++ {
+		if !seen[i] {
+			missing = append(missing, i)
+		}
+	}
+
+	// 如果没有缺失，返回 true 和空数组
+	if len(missing) == 0 {
+		return true, nil
+	}
+
+	// 返回结果
+	return false, missing
+}
+
+
+```
+
