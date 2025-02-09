@@ -90,6 +90,30 @@
 > - 本实验可能会暴露你 Raft 库中的错误。如果你对 Raft 实现进行了更改，请确保它继续通过所有实验 3 的测试。
 > - 合适的实验 4 测试时间是 400 秒的实际时间和 700 秒的 CPU 时间。此外，`go test -run TestSnapshotSize` 应该在不到 20 秒的实际时间内完成。
 
+#### 4B测试结果
+```shell
+❯ go test -run 4B                                                           
+Test: InstallSnapshot RPC (4B) ...
+  ... Passed --   5.8  3 16247   63
+Test: snapshot size is reasonable (4B) ...
+  ... Passed --   9.6  3 21331  800
+Test: ops complete fast enough (4B) ...
+  ... Passed --  11.3  3 17200    0
+Test: restarts, snapshots, one client (4B) ...
+  ... Passed --  23.0  5 88862 1348
+Test: restarts, snapshots, many clients (4B) ...
+  ... Passed --  23.2  5 215928 21092
+Test: unreliable net, snapshots, many clients (4B) ...
+  ... Passed --  16.0  5  8116 1338
+Test: unreliable net, restarts, snapshots, many clients (4B) ...
+  ... Passed --  22.7  5  9992 1347
+Test: unreliable net, restarts, partitions, snapshots, many clients (4B) ...
+  ... Passed --  31.3  5  7668  833
+Test: unreliable net, restarts, partitions, snapshots, random keys, many clients (4B) ...
+  ... Passed --  31.2  7 16085 2138
+PASS
+ok      6.5840/kvraft   174.013s
+```
 
 ## 4A 实现记录
 
