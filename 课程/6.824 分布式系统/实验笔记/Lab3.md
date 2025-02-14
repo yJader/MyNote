@@ -176,7 +176,7 @@ Tips: 3C 测试比 3A 或 3B 的测试要求更高，失败可能是由您在 3A
 
 #### 3C 测试结果
 
-![[IMG-20241212173459708.png]]
+![[Lab3.assets/IMG-20241212173459708.png]]
 
 ### Part 3D: log compaction
 
