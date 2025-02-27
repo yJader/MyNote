@@ -98,6 +98,18 @@ sudo apt install build-essential
 sudo apt install net-tools
 ```
 
+## 用户管理
+
+```shell
+# 创建用户, 并为他设置用户主目录
+sudo useradd <username>
+
+# 设置密码
+sudo passwd <username>
+
+# 添加sudo权限
+sudo usermod -aG sudo <username>
+```
 ## 命令行工具
 
 ### Starship
@@ -129,7 +141,7 @@ bash ./install.sh
 
 
 
-#### ### 安装Powerlevel10k 主题
+#### 安装Powerlevel10k 主题
 
 ```shell
 git clone --depth=1 https://gitee.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k
