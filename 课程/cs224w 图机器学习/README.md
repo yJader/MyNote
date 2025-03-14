@@ -15,3 +15,5 @@ Translate only the section **"6 Theory of Graph Neural Networks"** from the foll
 - Use LaTeX syntax (`$$`) for mathematical formulas. 
 - Ensure the translation is **complete** and accurate.
 ```
+
+**注**: 因为并不是研究理论, 选择了部分章节学习和翻译
