@@ -9,10 +9,18 @@ argument parser:
 	- vars方法将Namespace解析为字典, 
 	- `**`: 在函数定义中，`**kwargs` 用来接受任意数量的关键字参数。在函数调用时，`**` 可以用来解包字典，将字典的键值对作为关键字参数传递给函数。
 
-**关于task**
+**关于`task`**
 - 不同模型支持不同的task? 
 	- 使用`facebook/opt-125m`进行classify, 结果返回均为0.5,0.5
 - classify返回的各个维度的意义是什么? 应该去哪里看?
+- 如果task=auto, vLLM如何推测应该执行哪个任务
+	- `LLM(model="facebook/opt-125m")` -> 自动generate?
+	- 答案在log中
+```shell
+❯ uv run examples/offline_inference/basic/basic.py
+INFO 03-31 13:10:12 [__init__.py:239] Automatically detected platform cuda.
+INFO 03-31 13:10:51 [config.py:593] This model supports multiple tasks: {'embed', 'reward', 'classify', 'score', 'generate'}. Defaulting to 'generate'.
+```
 
 sampling parameters
 - `max_tokens`: 最大输出长度
