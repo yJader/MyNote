@@ -52,7 +52,7 @@ sampling parameters
 - seed：用于初始化随机数生成器的种子，以控制采样过程的随机性。
 - gpu_memory_utilization：用于存储模型权重、激活值和 KV 缓存的 GPU **内存比例**（范围 0 到 1）。较高的值可以增加 KV 缓存大小，提高模型吞吐量。但如果值过高，可能会导致显存不足（OOM）错误。
 - swap_space：每块 GPU 可使用的 CPU **内存交换空间（单位：GiB）**。当 best_of 采样参数大于 1 时，这部分内存用于临时存储请求状态。如果所有请求的 best_of=1，可以安全地将此值设为 0。值得注意的是，best_of 仅在 V0 版本支持。如果此值过小，可能会导致 OOM 错误。
-- cpu_offload_gb：用于卸载模型权重的 CPU 内存大小（单位：GiB）。这样可以虚拟扩展可用于存储模型权重的 GPU 内存，但会增加每次前向传播的 CPU-GPU 数据传输开销。
+- cpu_offload_gb：用于卸载模型权重的 CPU 内存大小（单位：GB）。这样可以虚拟扩展可用于存储模型权重的 GPU 内存，但会增加每次前向传播的 CPU-GPU 数据传输开销。
 - enforce_eager：是否强制使用 eager 执行模式。如果设置为 True，将禁用 CUDA 图（CUDA graph），并始终以 eager 模式执行。如果设置为 False，则会混合使用 CUDA 图和 eager 模式。
 - max_seq_len_to_capture：CUDA 图支持的最大序列长度。当序列的上下文长度超过此值时，将回退到 eager 模式。此外，对于编码-解码（encoder-decoder）模型，如果编码器输入的序列长度超过此值，也会回退到 eager 模式。
 - disable_custom_all_reduce：详见 vllm.config.ParallelConfig。
