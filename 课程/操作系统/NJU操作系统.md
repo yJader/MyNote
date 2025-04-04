@@ -43,13 +43,13 @@ A process 𝑃 can enter the critical section **if** the other does not want to 
 > - 仅考虑两个线程
 
 1. 如果**希望进入**临界区, 按照顺序执行以下两个原子操作
-2. 1. 举起自己的旗子(like A=1)[store]
-3. 2. 把写有对方名字的字条贴在厕所门上(like turn=B) (store; 覆盖), 后让前
-4. 然后进入持续的**观察模式**：
-5. 1. 观察对方是否举旗(like B=?) [load]
-6. 2. 观察厕所门上的名字(like turn=?) [load]
+	1. 举起自己的旗子(like A=1) \[store\]
+	2. 把写有对方名字的字条贴在厕所门上(like turn=B) \[store; 覆盖\], 后让前
+2. 然后进入持续的**观察模式**：
+	1. 观察对方是否举旗(like B=?) \[load\]
+	2. 观察厕所门上的名字(like turn=?) \[load\]
       - **①对方不举旗or②名字是自己，进入厕所，否则继续观察**
-7. 出厕所后，放下自己的旗子(like A=0) [store]
+3. 出厕所后，放下自己的旗子(like A=0) \[store\]
    - **不用管门上的字条**
 
 **一个例子**
@@ -186,7 +186,7 @@ void unlock() {
 
 同一份计算任务，时间 (CPU cycles) 和空间 (内存占用) 会随处理器数量的增长而变化。
 
-![image-20240503211143569](./操作系统.assets/image-20240503211143569.png)
+![image-20240503211143569](NJU操作系统.assets/image-20240503211143569.png)
 
 #### 读写不对称
 
@@ -770,7 +770,7 @@ void consume() {
 - 哲学家 (线程) 有时思考，有时吃饭
 - 吃饭需要同时得到左手和右手的叉子
 
-<img src="./操作系统.assets/v2-6ba12c906ba51ad2429fb9f3179efe78_1440w.jpeg" alt="哲学家吃饭" style="zoom:50%;" />
+<img src="NJU操作系统.assets/v2-6ba12c906ba51ad2429fb9f3179efe78_1440w.jpeg" alt="哲学家吃饭" style="zoom:50%;" />
 
 - 朴素地基于信号量: 每个人①`p(左手叉子)` ②`p(右手叉子)`
   - 会出现所有人都进行了①`p(左手叉子)` , 然后叉子不足,死锁
@@ -1039,11 +1039,11 @@ void T_2() { sum++; }
   - Diablo I 里复制物品的例子
   - Therac-25 中 “移动 Mirror + 设置状态”
 
-![image-20240505171540849](./操作系统.assets/image-20240505171540849.png)
+![image-20240505171540849](NJU操作系统.assets/image-20240505171540849.png)
 
 **操作系统中还有更多的共享状态**
 
-<img src="./操作系统.assets/image-20240505171754415.png" alt="image-20240505171754415" style="zoom:50%;" />
+<img src="NJU操作系统.assets/image-20240505171754415.png" alt="image-20240505171754415" style="zoom:50%;" />
 
 - 在检查和写入的间隙修改link, 就能以root权限写入一个文件, 如passwd, 对用户进行修改
 
@@ -1054,7 +1054,7 @@ void T_2() { sum++; }
 - 例子：concurrent use-after-free
 - [GhostRace](https://www.vusec.net/projects/ghostrace/) (USENIX Sec'24)
 
-![image-20240505172017425](./操作系统.assets/image-20240505172017425.png)
+![image-20240505172017425](NJU操作系统.assets/image-20240505172017425.png)
 
 - 希望的顺序: S2(set TRUE)→S3循环, 等待S4(set FALSE) → S4(set FALSE) → S3结束循环
 - 有可能的顺序: S4(set FALSE)→ S2(set TRUE)覆盖掉S4 → S3无限循环, 因为S4已经执行过了
@@ -1877,7 +1877,7 @@ int pipe(int pipefd[2]);
 
 #### 什么是操作系统
 
-<img src="./操作系统.assets/image-20240506220613011.png" alt="image-20240506220613011" style="zoom:50%;" />
+<img src="NJU操作系统.assets/image-20240506220613011.png" alt="image-20240506220613011" style="zoom:50%;" />
 
 **《操作系统》课上的操作系统**
 
@@ -2251,7 +2251,7 @@ int main() {
 
 #### 实际的malloc/free
 
-![image-20240509181237427](./操作系统.assets/image-20240509181237427.png)
+![image-20240509181237427](NJU操作系统.assets/image-20240509181237427.png)
 
 **以上就是所有现代 malloc/free 实现的基础**
 
@@ -2583,7 +2583,7 @@ call_pointer(mem, fle['symbols']['_start'])
 - 用旋转的二维平面存储数据 (无法内卷，容量变小)
 - 读写延迟不会超过旋转周期 (随机读写速度大幅提升)
 
-<img src="操作系统.assets/mag-drum.webp" alt="center" style="zoom: 10%;" />
+<img src="NJU操作系统.assets/mag-drum.webp" alt="center" style="zoom: 10%;" />
 
 #### 磁盘
 
@@ -2591,7 +2591,7 @@ call_pointer(mem, fle['symbols']['_start'])
 
 - 在二维平面上放置许多磁带
 
-<img src="操作系统.assets/5f9918c94f752293828d7fd56d9752b9-6457510.png" alt="5f9918c94f752293828d7fd56d9752b9" style="zoom: 67%;" />
+<img src="NJU操作系统.assets/5f9918c94f752293828d7fd56d9752b9-6457510.png" alt="5f9918c94f752293828d7fd56d9752b9" style="zoom: 67%;" />
 
 **成本与风险**
 
@@ -2646,7 +2646,7 @@ Advanced Host Controller Interface (AHCI); Native Command Queuing (NCQ)
 
 **今天的应用场景**
 
-- 存盘(保存)按钮  <img src="操作系统.assets/image-20240916114717799.png" alt="image-20240916114717799" style="zoom:50%;" />
+- 存盘(保存)按钮  <img src="NJU操作系统.assets/image-20240916114717799.png" alt="image-20240916114717799" style="zoom:50%;" />
 
 ### 坑存储
 
@@ -2679,7 +2679,7 @@ Advanced Host Controller Interface (AHCI); Native Command Queuing (NCQ)
 
 #### Flash Memory
 
-<img src="操作系统.assets/nand-flash.webp" alt="center" style="zoom:33%;" />
+<img src="NJU操作系统.assets/nand-flash.webp" alt="center" style="zoom:33%;" />
 
 Flash Memory: 几乎全是优点
 
@@ -2703,7 +2703,7 @@ Flash Memory: 几乎全是优点
 #### USB Flash Disk
 
 天才的想法: 将USB口和Flash Disk连起来
-<img src="操作系统.assets/upan.webp" alt="center" style="zoom:50%;" />
+<img src="NJU操作系统.assets/upan.webp" alt="center" style="zoom:50%;" />
 
 容量大、速度快、相当便宜
 
@@ -2829,7 +2829,7 @@ void readsect(void *dst, int sect) {
 
 ##### 打印机
 
-[<img src="操作系统.assets/printer-spec.webp" alt="center" style="zoom: 50%;" />](https://jyywiki.cn/OS/manuals/CalComp-Software-Reference.pdf)
+[<img src="NJU操作系统.assets/printer-spec.webp" alt="center" style="zoom: 50%;" />](https://jyywiki.cn/OS/manuals/CalComp-Software-Reference.pdf)
 
 - 打印机将字节流描述的文字/图形打印到纸张上
 
@@ -2949,7 +2949,7 @@ for (int i = 0; i < 1 GB / 4; i++) {
 
 - 每一帧必须在 <10K 条指令内完成
 - 但屏幕共有 256 x 240 = 61K 像素 (256 色)……
-  <img src="操作系统.assets/nes-sprite.png" alt="center" style="zoom:50%;" />
+  <img src="NJU操作系统.assets/nes-sprite.png" alt="center" style="zoom:50%;" />
 
 **如何实现需求? 加个 CPU!** 
 
@@ -2990,7 +2990,7 @@ for (int x = 0; x < W; x++)
 
 - 给每个面涂上颜色 ([基本原理](https://www.bilibili.com/video/BV1sN4y1p7dG/))
 
-<img src="操作系统.assets/tomb-raider.webp" alt="img" style="zoom: 25%;" />
+<img src="NJU操作系统.assets/tomb-raider.webp" alt="img" style="zoom: 25%;" />
 
 Tomb Raider (1996)
 
@@ -3067,15 +3067,15 @@ for (int x = 0; x < W; x++)
 but 真的是这样吗？
 
 - **求证**：`strace readelf -h /bin/ls` 
-  - ![image-20240917133012220](操作系统.assets/image-20240917133012220.png)
+  - ![image-20240917133012220](NJU操作系统.assets/image-20240917133012220.png)
   - 使用的是`openat()`, 得到一个文件描述符(`3`), 指向`/bin/ls` 
     - *Note*: 0,1,2 = 标准输入, 标准输出, 标准错误输出
   - 后面还有一些神奇的系统调用
-    ![image-20240917135046909](操作系统.assets/image-20240917135046909.png)
+    ![image-20240917135046909](NJU操作系统.assets/image-20240917135046909.png)
     - 打开in18相关
 - 还有更多有趣的例子
   - `LC_ALL=zh_CN.UTF-8 strace readelf -h a.txt` 
-  - ![image-20240917135735453](操作系统.assets/image-20240917135735453.png)
+  - ![image-20240917135735453](NJU操作系统.assets/image-20240917135735453.png)
     使用了中文语言包(前提是安装了中文语言包)
   - “不是 ELF 文件 - 它开头的 magic 字节错”？
     - (需要 language-pack-zh-hans)
@@ -3137,7 +3137,7 @@ mmap(addr, length, prot, flags, fd, offset);
 2. `dup`复制文件描述符时，两个文件描述符共享 offset
 3. `fork`时，父子进程共享 offset
 4. `execve` 执行文件时, 文件描述符不变 (但是经常会出现忘记关闭文件的情况, 因此添加了flag`O_CLOEXEC`)
-   - <img src="操作系统.assets/image-20240917183231816.png" alt="image-20240917183231816" style="zoom:50%;" />
+   - <img src="NJU操作系统.assets/image-20240917183231816.png" alt="image-20240917183231816" style="zoom:50%;" />
 5. O_APPEND 打开，偏移量永远在最后 (无论是否 fork)
    - modification of the file offset and the write operation are performed as a single atomic step
 
@@ -3232,7 +3232,7 @@ struct file_operations {
 
 - 寄存器被映射到地址空间
 
-<img src="操作系统.assets/canonical-device.webp" alt="center" style="zoom:50%;" />
+<img src="NJU操作系统.assets/canonical-device_1.webp" alt="center" style="zoom:50%;" />
 
 #### 一个 struct file_operations 的实现
 
@@ -3249,7 +3249,7 @@ struct file_operations {
 
 **我们也可以实现一个驱动 Nuclear Launcher**
 
-- ![center](操作系统.assets/nuke-launch.gif)
+- ![center](NJU操作系统.assets/nuke-launch.gif)
 - 把对 /dev/nuke0 “路由” 我们的 file_operations
 - 向 GPIO 的 memory-mapped address 写入正确的电平
 
@@ -3397,7 +3397,7 @@ mount(source, target, filesystemtype, mountflags, data);
 - [FHS](http://refspecs.linuxfoundation.org/FHS_3.0/fhs/index.html): enables *software and user* to predict the location of installed files and directories.
   - 例子：macOS 是 UNIX 的内核 (BSD), 但不遵循 Linux FHS
 
-![center](操作系统.assets/fhs.webp)
+![center](NJU操作系统.assets/fhs.webp)
 
 #### 文件系统 API: 目录管理
 
@@ -3520,7 +3520,7 @@ class Directory: FSObject {
 - 360 个 512B 扇区 (sectors)
 - 在这样的设备上实现文件系统，应该选用怎样的数据结构？
 
-<img src="操作系统.assets/floppy-disk.webp" alt="center" style="zoom:33%;" />
+<img src="NJU操作系统.assets/floppy-disk.webp" alt="center" style="zoom:33%;" />
 
 ##### 需求分析
 
@@ -3651,7 +3651,7 @@ ext2(The Second Extended File System): 按对象方式集中存储文件/目录�
 
 对磁盘进行分组
 
-![center](操作系统.assets/fs-ext2.webp)
+![center](NJU操作系统.assets/fs-ext2.webp)
 
 **“superblock”：文件系统元数据**
 
@@ -3661,7 +3661,7 @@ ext2(The Second Extended File System): 按对象方式集中存储文件/目录�
 
 inode结构
 
-<img src="操作系统.assets/ext2-inode.webp" alt="inode结构" title="inode结构"/>
+<img src="NJU操作系统.assets/ext2-inode.webp" alt="inode结构" title="inode结构"/>
 
 ##### ext2 目录文件
 
@@ -3751,7 +3751,7 @@ RAID (虚拟化) = **虚拟块号到 (磁盘, 块号) 的 “映射”**
 
 ==Rotating Parity==: 使 Parity 均匀分布在各个磁盘
 
-<img src="操作系统.assets/raid5.webp" alt="center" style="zoom: 33%;" />
+<img src="NJU操作系统.assets/raid5.webp" alt="center" style="zoom: 33%;" />
 
 #### RAID 自身的可靠性
 
@@ -3780,7 +3780,7 @@ MapReduce可以让不了解并发编程的人通过map&reduce函数实现并发
 
 **Everything is Virtual** 
 
-![center](操作系统.assets/ebs3.webp)
+![center](NJU操作系统.assets/ebs3.webp)
 
 - 阿里云 Elastic Block Storage (EBS, FAST'24 🏅)
   - 现在理解为什么云厂商能躺着挣 💰 了
@@ -3794,7 +3794,7 @@ MapReduce可以让不了解并发编程的人通过map&reduce函数实现并发
 
 **Fail-slow**
 
-![center](操作系统.assets/fail-slow.webp)
+![center](NJU操作系统.assets/fail-slow.webp)
 
 - Firmware bug; device error; wear-out; configuration; environment; ... 磁盘上的 “[性能问题](https://www.usenix.org/system/files/login/articles/login_summer18_06_gunawi.pdf)”
 
@@ -3817,7 +3817,7 @@ MapReduce可以让不了解并发编程的人通过map&reduce函数实现并发
 
 
 <p>
-	<img src="操作系统.assets/unix-fs.webp" alt="center" style="zoom:67%;" />
+	<img src="NJU操作系统.assets/unix-fs.webp" alt="center" style="zoom:67%;" />
   <center>位图(bit map)</center>
 </p>
 
@@ -3860,7 +3860,7 @@ MapReduce可以让不了解并发编程的人通过map&reduce函数实现并发
 
 **根据磁盘上已有的信息，恢复出 “最可能” 的数据结构**
 
-![center](操作系统.assets/fsck-recovery.webp)
+![center](NJU操作系统.assets/fsck-recovery.webp)
 
 - [SQCK: A declarative file system checker](https://dl.acm.org/doi/10.5555/1855741.1855751) (OSDI'08)
 - [然而](https://dl.acm.org/doi/10.1145/3281031) (FAST'18): “widely used file systems (EXT4, XFS, BtrFS, and F2FS) may leave the file system in an uncorrectable state if the repair procedure is interrupted unexpectedly” 😂
@@ -3896,7 +3896,7 @@ Jouraling = 1 + 2
 
 **用 bread, bwrite 和 bflush 实现 append()**
 
-![center](操作系统.assets/fs-journaling.webp)
+![center](NJU操作系统.assets/fs-journaling.webp)
 
 1. 定位到 journal 的末尾 (bread)
 2. bwrite TXBegin 和所有数据结构操作
