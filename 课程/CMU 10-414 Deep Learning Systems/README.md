@@ -5,8 +5,9 @@
 一门相似的课程 [智能计算系统官方网站](https://novel.ict.ac.cn/aics/)
 - [智能计算系统 - CS自学指南](https://csdiy.wiki/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E7%B3%BB%E7%BB%9F/AICS/#_2)
 - 学哪个待定, 先看看introduction
-TODO:
-- https://csdiy.wiki/%E6%B7%B1%E5%BA%A6%E7%94%9F%E6%88%90%E6%A8%A1%E5%9E%8B/%E5%A4%A7%E8%AF%AD%E8%A8%80%E6%A8%A1%E5%9E%8B/CMU11-868/
+**TODO**:
+- [CMU 11-868: Large Language Model System - CS自学指南](https://csdiy.wiki/%E6%B7%B1%E5%BA%A6%E7%94%9F%E6%88%90%E6%A8%A1%E5%9E%8B/%E5%A4%A7%E8%AF%AD%E8%A8%80%E6%A8%A1%E5%9E%8B/CMU11-868/#_1)
+
 ## prompt
 
 ```markdown
