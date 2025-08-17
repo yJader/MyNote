@@ -226,3 +226,11 @@ graph LR
     C -->|One| D[Result one]
     C -->|Two| E[Result two]
 ```
+
+
+
+# 如何在marp中插入mermaid
+
+Instead of using mermaid.js client script in Markdown/plugins directly, I'm suggesting to render mermaid.js via the external service for server-side diagram rendering such as [kroki](https://kroki.io/) and [mermaid.ink](https://mermaid.ink/). Diagram and slides can be fully rendered within server, no required client scripts, and Marp can return the reliable result.
+👉 [#139 (comment)](https://github.com/marp-team/marp-core/issues/139#issuecomment-1040593472)
+
