@@ -1,3 +1,24 @@
+## overall
+
+### colab导入库问题
+引用挂载的needle库时, 修改了needle库文件内容后, 还需要重新导入
+
+plan a: 启用autoreload, 设置为模式1: 在每次执行cell前, reload用 %aimport 标记过的模块
+```python
+%load_ext autoreload
+%autoreload 1
+
+%aimport needle
+```
+
+或者plan b: 
+设置为模式2: 在每次执行cell前, reload所有已导入模块
+```python
+%load_ext autoreload
+%autoreload 2
+```
+
+
 ## Homework1
 
 ### 运算
