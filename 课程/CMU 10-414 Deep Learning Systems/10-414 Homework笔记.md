@@ -39,3 +39,11 @@ def broadcast_to(a, shape): broadcast an array to a new shape (1 input, `shape`
 
 Linear初始化要选择`kaiming_uniform`, 否则无法通过测试
 
+L2正则化+动量SGD更新:
+$$
+\begin{aligned}
+g_i &= \nabla_\theta f(\theta_i) + \lambda \theta_i\\
+u_{t+1}&←βu_i+(1−β)g_i\\
+w_{i+1}&←w_i−αu_i
+\end{aligned}
+$$
