@@ -37,9 +37,9 @@ def broadcast_to(a, shape): broadcast an array to a new shape (1 input, `shape`
 
 ## Homework2
 
+### 初始化方法选择
 Linear初始化要选择`kaiming_uniform`, 否则无法通过测试
-
-L2正则化+动量SGD更新:
+### L2正则化+动量SGD更新公式
 $$
 \begin{aligned}
 g_i &= \nabla_\theta f(\theta_i) + \lambda \theta_i\\
@@ -47,7 +47,7 @@ u_{t+1}&←βu_i+(1−β)g_i\\
 w_{i+1}&←w_i−αu_i
 \end{aligned}
 $$
-`TypeError: Module.__init__() takes 1 positional argument but 2 were given`
+### `TypeError: Module.__init__() takes 1 positional argument but 2 were given`
 
 ```
     def forward(self, x: Tensor) -> Tensor:
@@ -61,3 +61,23 @@ E           TypeError: Module.__init__() takes 1 positional argument but 2 were 
 - 这里调用的本应该是forward方法而非init, 说明这里的module是一个类, 那么很可能在定义network时不小心传入的是一个类, 而非对象
 - 如`nn.ReLU()`误写为`nn.ReLU`
 - 类型检查没做好...
+### AssertionError: float64 float32`
+> **_NOTE_**: The default data type for the tensor is `float32`. If you want to change the data type, you can do so by setting the `dtype` parameter in the `Tensor` constructor. For example, `Tensor([1, 2, 3], dtype='float64')` will create a tensor with `float64` data type. In this homework, **make sure any tensor you create has `float32` data type to avoid any issues with the autograder**.
+
+在optimizer中, 会使用float64的超参数乘以float32的tensor, 最终导致整个值变为float64, 此时重新复制给data, 就会引发`AssertionError: float64 float32`
+注: 此为Tensor类方法中的断言
+```python
+class Tensor(Value):
+    @data.setter
+    def data(self, value):
+        assert isinstance(value, Tensor)
+        assert value.dtype == self.dtype, "%s %s" % (
+            value.dtype,
+            self.dtype,
+        )
+        self.cached_data = value.realize_cached_data()
+```
+
+过了!
+![](10-414%20Homework笔记.assets/IMG-10-414%20Homework笔记-20250822002634905.png)
+备注: 训练OOM, 被kill掉了
