@@ -47,3 +47,17 @@ u_{t+1}&←βu_i+(1−β)g_i\\
 w_{i+1}&←w_i−αu_i
 \end{aligned}
 $$
+`TypeError: Module.__init__() takes 1 positional argument but 2 were given`
+
+```
+    def forward(self, x: Tensor) -> Tensor:
+        ### BEGIN YOUR SOLUTION
+        res = x
+        for module in self.modules:
+>           res = module(res)
+                  ^^^^^^^^^^^
+E           TypeError: Module.__init__() takes 1 positional argument but 2 were given
+```
+- 这里调用的本应该是forward方法而非init, 说明这里的module是一个类, 那么很可能在定义network时不小心传入的是一个类, 而非对象
+- 如`nn.ReLU()`误写为`nn.ReLU`
+- 类型检查没做好...
