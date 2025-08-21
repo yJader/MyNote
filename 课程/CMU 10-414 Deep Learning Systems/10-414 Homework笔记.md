@@ -33,3 +33,9 @@ def broadcast_to(a, shape): broadcast an array to a new shape (1 input, `shape`
 
 广播的梯度计算: 沿着广播的维度sum回去
 - 广播的本质是变量复制, 广播后的元素参与了多次的计算, 反向传播时要累加这部分的梯度值
+
+
+## Homework2
+
+Linear初始化要选择`kaiming_uniform`, 否则无法通过测试
+
