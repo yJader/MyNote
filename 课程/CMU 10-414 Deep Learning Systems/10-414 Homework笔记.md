@@ -81,3 +81,4 @@ class Tensor(Value):
 过了!
 ![](10-414%20Homework笔记.assets/IMG-10-414%20Homework笔记-20250822002634905.png)
 备注: 训练OOM, 被kill掉了
+![](10-414%20Homework笔记.assets/IMG-10-414%20Homework笔记-20250822141618211.png)
