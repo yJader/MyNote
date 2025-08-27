@@ -132,3 +132,4 @@ ln: ./test_link: File exists
 # 注: -sf并没有效果, 依然会将test_link解析为文件夹, 导致创建出嵌套的link
 ```
 
+## scp
