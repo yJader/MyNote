@@ -122,8 +122,6 @@ sudo usermod -aG sudo <username>
 ```
 ## 命令行工具
 
-### Starship
-
 ### ZSH
 
 #### 安装 Zsh
@@ -154,6 +152,7 @@ bash ./install.sh
 #### 安装Powerlevel10k 主题
 
 ```shell
+# 官方镜像
 git clone --depth=1 https://gitee.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k
 vim ~/.zshrc
 # ZSH_THEME="powerlevel10k/powerlevel10k"
@@ -204,31 +203,9 @@ git clone https://github.com/zsh-users/zsh-syntax-highlighting ${ZSH_CUSTOM:-~/.
 sudo zsh-autosuggestions zsh-syntax-highlighting
 ```
 
-#### 备份配置
+### 备份配置 - chezmoi
 
-用git来同步zsh的配置
 
-初始化
-
-```shell
-mkdir dotfiles                                                                                           
-cd dotfiles
-git init
-cp ~/.zshrc .
-cp ~/.zprofile .
-cp ~/.zlogin .
-cp ~/.zlogout .
-cp ~/.zpreztorc .
-git add .
-git commit -m "Initial commit of dotfiles"
-```
-
-同步配置
-
-```
-cd ~/.dotfiles
-ln -s ~/.dotfiles/.zshrc ~/.zshrc
-```
 
 ## Github Cli
 
