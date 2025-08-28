@@ -100,6 +100,14 @@ sudo apt install build-essential
 sudo apt install net-tools
 ```
 
+### git配置
+
+```bash
+# 自动将新分支推送到同名远程分支并设置 upstream
+git config --global push.default current
+# 创建新分支时自动关联上游
+git config --global branch.autoSetupMerge always
+```
 ## 用户管理
 
 ```shell
