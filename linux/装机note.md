@@ -218,6 +218,42 @@ sudo zsh-autosuggestions zsh-syntax-highlighting
  && sudo apt install gh -y
 ```
 
+## Conda
+
+> 先放一个官方文档: [Installing Miniconda - Anaconda](https://www.anaconda.com/docs/getting-started/miniconda/install), 建议先看官方文档, 以下为偷懒用摘抄
+
+```shell
+cd ~
+
+# 下载, shell较大, 注意网络环境配置
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+
+bash ~/Miniconda3-latest-Linux-x86_64.sh
+```
+
+值得注意的是这个配置项
+
+```
+Do you wish to update your shell profile to automatically initialize conda?
+This will activate conda on startup and change the command prompt when activated.
+If you'd prefer that conda's base environment not be activated on startup,
+   run the following command when conda is activated:
+
+conda config --set auto_activate_base false
+
+You can undo this by running `conda init --reverse $SHELL`? [yes|no]
+[no] >>> 
+```
+- 不是很推荐在shell启动时就激活base环境, 会严重拖慢shell启动速度
+	- vscode选择需要的虚拟环境的解释器即可完成这个功能
+- 默认是no, 挺不错
+
+最后测试一下是否安装成功
+
+```shell
+conda --version
+```
+
 ## Docker
 
 > [Install Docker Engine on Ubuntu | Docker Docs](https://docs.docker.com/engine/install/ubuntu/)
