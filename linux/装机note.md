@@ -34,8 +34,6 @@ p
 sudo apt install vim git
 ```
 
-
-
 ### SSH配置
 
 ```bash
@@ -74,7 +72,6 @@ sudo systemctl enable ssh
 
    - 二编: server真的需要吗?
 
-
    ```bash
    ssh-keygen
    ```
@@ -108,6 +105,7 @@ git config --global push.default current
 # 创建新分支时自动关联上游
 git config --global branch.autoSetupMerge always
 ```
+
 ## 用户管理
 
 ```shell
@@ -120,6 +118,7 @@ sudo passwd <username>
 # 添加sudo权限
 sudo usermod -aG sudo <username>
 ```
+
 ## 命令行工具
 
 ### ZSH
@@ -146,8 +145,6 @@ wget https://github.com/robbyrussell/oh-my-zsh/raw/master/tools/install.sh -O - 
 wget https://github.com/robbyrussell/oh-my-zsh/raw/master/tools/install.sh
 bash ./install.sh
 ```
-
-
 
 #### 安装Powerlevel10k 主题
 
@@ -192,6 +189,7 @@ git clone https://gitee.com/minhanghuang/zsh-syntax-highlighting ${ZSH_CUSTOM:-~
 直接在插件列表中添加, 无需下载
 
 ##### 启用插件
+
 ```zsh
 git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
 git clone https://github.com/zsh-users/zsh-syntax-highlighting ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
@@ -205,22 +203,21 @@ sudo zsh-autosuggestions zsh-syntax-highlighting
 
 ### 备份配置 - chezmoi
 
-
-
 ## Github Cli
 
-https://github.com/cli/cli?tab=readme-ov-file#installation
+<https://github.com/cli/cli?tab=readme-ov-file#installation>
 
 ```bash
 (type -p wget >/dev/null || (sudo apt update && sudo apt-get install wget -y)) \
-	&& sudo mkdir -p -m 755 /etc/apt/keyrings \
+ && sudo mkdir -p -m 755 /etc/apt/keyrings \
         && out=$(mktemp) && wget -nv -O$out https://cli.github.com/packages/githubcli-archive-keyring.gpg \
         && cat $out | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null \
-	&& sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
-	&& echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
-	&& sudo apt update \
-	&& sudo apt install gh -y
+ && sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+ && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+ && sudo apt update \
+ && sudo apt install gh -y
 ```
+
 ## Docker
 
 > [Install Docker Engine on Ubuntu | Docker Docs](https://docs.docker.com/engine/install/ubuntu/)
@@ -244,11 +241,11 @@ https://github.com/cli/cli?tab=readme-ov-file#installation
      sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
    sudo apt-get update
    ```
-   
+
    > **Note**
    >
    > If you use an Ubuntu derivative distro, such as Linux Mint, you may need to use `UBUNTU_CODENAME` instead of `VERSION_CODENAME`.
-   
+
 2. Install the Docker packages.
 
    (Latest Specific version)
@@ -256,7 +253,9 @@ https://github.com/cli/cli?tab=readme-ov-file#installation
    To install the latest version, run:
 
    ```shell
+
 sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
    ```
 
 3. Verify that the Docker Engine installation is successful by running the `hello-world` image.
@@ -264,10 +263,8 @@ sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin 
    ```shell
    sudo docker run hello-world
    ```
-   
-   This command downloads a test image and runs it in a container. When the container runs, it prints a confirmation message and exits.
 
-   
+   This command downloads a test image and runs it in a container. When the container runs, it prints a confirmation message and exits.
 
 ## 远程桌面
 
@@ -383,8 +380,6 @@ sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin 
    sudo reboot
    ```
 
-   
-
 ### 使用 VNC Viewer 连接到桌面
 
 现在，你可以使用 VNC Viewer 连接到你的 Ubuntu 机器。以下是使用 RealVNC Viewer 的步骤：
@@ -462,13 +457,11 @@ x0vncserver -display :0 -rfbauth ~/.vnc/passwd -rfbport 5900
    sudo systemctl start x0vncserver.service
    ```
 
-
-
 ## 一些问题
 
 ### 重启后没网
 
->  [怎么解决在vmware虚拟机下ubuntu linux系统重启后不能联网的问题_Engineer-Bruce_Yang的博客-CSDN博客](https://blog.csdn.net/morixinguan/article/details/118886890)
+> [怎么解决在vmware虚拟机下ubuntu linux系统重启后不能联网的问题_Engineer-Bruce_Yang的博客-CSDN博客](https://blog.csdn.net/morixinguan/article/details/118886890)
 
 问题情况: 重启后网络图标消失, 无法联网
 
@@ -481,6 +474,3 @@ service NetworkManager stop
 sudo rm /var/lib/NetworkManager/NetworkManager.state
 service NetworkManager start
 ```
-
-
-
