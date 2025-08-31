@@ -68,4 +68,58 @@
 | 11/28      | *No class - Thanksgiving*                                       |            |                                                                                                                                    |                                                                                                                                                                                                                                         |                                                                                |
 | 12/3       | 25 - Future Directions / Q&A                                    | Both       |                                                                                                                                    |                                                                                                                                                                                                                                         |                                                                                |
 | 12/5       | 26 - Student project presentations                              | Students   |                                                                                                                                    |                                                                                                                                                                                                                                         |                                                                                |
+## Slides下载
 
+AI真是太好用了XD
+```shell
+#!/bin/bash
+
+# 创建一个目录来存放下载的幻灯片
+OUTPUT_DIR="dlsys_course_slides"
+mkdir -p "$OUTPUT_DIR"
+echo "将在 '$OUTPUT_DIR/' 目录中保存所有文件"
+echo "-----------------------------------------"
+
+# 定义一个辅助函数来处理单个文件的下载，避免代码重复
+download_file() {
+    local filename="$1"
+    local url="$2"
+    
+    echo "正在下载: $filename"
+    # 使用 wget 命令
+    # -O 指定输出文件名 (包括目录)
+    # -q 使其静默运行，--show-progress 显示一个简洁的进度条
+    wget -q --show-progress -O "$OUTPUT_DIR/$filename" "$url"
+    
+    if [ $? -eq 0 ]; then
+        echo "下载完成."
+    else
+        echo "下载失败: $filename"
+    fi
+    echo "" # 添加一个空行以提高可读性
+}
+
+# --- 所有 PDF 链接和对应的文件名都硬编码在此 ---
+
+download_file "1 - Introduction - Logistics.pdf" "https://dlsyscourse.org/slides/intro.pdf"
+download_file "2 - ML Refresher - Softmax Regression.pdf" "https://dlsyscourse.org/slides/2-softmax_regression.pdf"
+download_file "3 - Manual Neural Networks - Backprop.pdf" "https://dlsyscourse.org/slides/manual_neural_nets.pdf"
+download_file "4 - Automatic Differentiation.pdf" "https://dlsyscourse.org/slides/4-automatic-differentiation.pdf"
+download_file "6 - Optimization.pdf" "https://dlsyscourse.org/slides/fc_init_opt.pdf"
+download_file "7 - Neural Network Library Abstractions.pdf" "https://dlsyscourse.org/slides/7-nn-framework.pdf"
+download_file "9 - Normalization Dropout Implementation.pdf" "https://dlsyscourse.org/slides/norm_reg.pdf"
+download_file "10 - Convolutional Networks.pdf" "https://dlsyscourse.org/slides/conv_nets.pdf"
+download_file "11 - Hardware Acceleration for Linear Algebra.pdf" "https://dlsyscourse.org/slides/11-hardware-acceleration.pdf"
+download_file "12 - Hardware Acceleration + GPUs.pdf" "https://dlsyscourse.org/slides/12-gpu-acceleration.pdf"
+download_file "15 - Sequence Modeling + RNNs.pdf" "https://dlsyscourse.org/slides/rnns.pdf"
+download_file "17 - Transformers and Autoregressive Models.pdf" "https://dlsyscourse.org/slides/transformers.pdf"
+download_file "19 - Training Large Models.pdf" "https://dlsyscourse.org/slides/15-training-large-models.pdf"
+download_file "20 - Generative Models.pdf" "https://dlsyscourse.org/slides/16-generative-models.pdf"
+download_file "22 - Customize Pretrained Models.pdf" "https://dlsyscourse.org/slides/22-augment-pretrained-models.pdf"
+download_file "23 - Model Deployment.pdf" "https://dlsyscourse.org/slides/23-model-deployment.pdf"
+
+# --- 下载列表结束 ---
+
+echo "-----------------------------------------"
+echo "所有预设的 PDF 均已下载完毕"
+```
