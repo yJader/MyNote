@@ -487,6 +487,9 @@ sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin 
    ```
 
    This command downloads a test image and runs it in a container. When the container runs, it prints a confirmation message and exits.
+### docker镜像
+
+[境内 Docker 镜像状态监控](https://status.anye.xyz/)
 
 ## 远程桌面
 
