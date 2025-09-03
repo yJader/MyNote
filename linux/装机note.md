@@ -252,6 +252,7 @@ git push
 在新设备上, 只需要再次执行`init`, 然后执行`apply`即可恢复配置。
 
 ```bash
+chezmoi init yJader/dotfiles
 chezmoi apply
 ```
 
