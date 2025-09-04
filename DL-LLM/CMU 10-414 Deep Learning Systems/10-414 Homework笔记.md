@@ -20,6 +20,17 @@ plan a: 启用autoreload, 设置为模式1: 在每次执行cell前, reload用 %a
 
 注: 重复导入可能会造成一些奇怪的bug, 可以尝试重启运行时
 - bug例: 重复导入ndl库, 导致`isinstance(ndl.Tensor, ndl.autograd.Tensor)`结果为False ...非常抽象
+
+## Jupyter小技巧
+
+使用clear_output来清空上一条命令
+```python
+!make -j32
+from IPython.display import clear_output
+
+clear_output(wait=True)
+!python3 -m pytest -v -s -k "(compact or setitem) and cpu"
+```
 ## Homework1
 
 ### 运算
