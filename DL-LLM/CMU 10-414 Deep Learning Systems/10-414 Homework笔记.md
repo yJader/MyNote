@@ -95,3 +95,41 @@ class Tensor(Value):
 ![](10-414%20Homework笔记.assets/IMG-10-414%20Homework笔记-20250822002634905.png)
 备注: 训练OOM, 被kill掉了
 ![](10-414%20Homework笔记.assets/IMG-10-414%20Homework笔记-20250822141618211.png)
+
+## Homework3
+
+Compact & Setitem
+```cpp
+void Compact(const AlignedArray &a, AlignedArray *out, std::vector<int32_t> shape, std::vector<int32_t> strides, size_t offset){
+/**
+* Compact an array in memory
+*
+* Args:
+*   a: *non-compact* representation of the array, given as input
+*   out: compact version of the array to be written
+*   shape: shapes of each dimension for a and out
+*   strides: strides of the *a* array (not out, which has compact strides)
+*   offset: offset of the *a* array (not out, which has zero offset, being compact)
+*
+* Returns:
+*  void (you need to modify out directly, rather than returning anything; this is true for all the
+*  function will implement here, so we won't repeat this note.)
+*/
+}
+
+void EwiseSetitem(const AlignedArray &a, AlignedArray *out, std::vector<int32_t> shape, std::vector<int32_t> strides, size_t offset){
+/**
+* Set items in a (non-compact) array
+*
+* Args:
+*   a: **_compact_** array whose items will be written to out
+*   out: non-compact array whose items are to be written
+*   shape: shapes of each dimension for a and out
+*   strides: strides of the *out* array (not a, which has compact strides)
+*   offset: offset of the *out* array (not a, which has zero offset, being compact)
+*/
+}
+```
+- compact将**non-compact的a**写入到compact的out数组中
+- setitem将**compact的a**写入到non-compact的out数组中
+所以两个是一个相反的操作
