@@ -98,7 +98,49 @@ class Tensor(Value):
 
 ## Homework3
 
-Compact & Setitem
+### 如何直接计算noncompact->compact的映射关系
+```cpp
+__global__ void CompactKernel(const scalar_t *a, scalar_t *out, size_t size, CudaVec shape,
+                                  CudaVec strides, size_t offset)
+    {
+      /**
+       * The CUDA kernel for the compact opeation.  This should effectively map a single entry in the
+       * non-compact input a, to the corresponding item (at location gid) in the compact array out.
+       *
+       * Args:
+       *   a: CUDA pointer to a array
+       *   out: CUDA point to out array
+       *   size: size of out array
+       *   shape: vector of shapes of a and out arrays (of type CudaVec, for past passing to CUDA kernel)
+       *   strides: vector of strides of out array
+       *   offset: offset of out array
+       */
+      size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
+
+      /// BEGIN SOLUTION
+      // assert(false && "Not Implemented");
+      if (gid >= size)
+        return;
+
+      size_t a_idx = offset;
+      size_t tmp = gid;
+
+	  for (size_t i = shape.size; i > 0; i--)
+      {
+        // 计算当前维度的索引
+        size_t dim_idx = tmp % shape.data[i - 1];
+        // 计算基于步长的映射, 并累加
+        a_idx += dim_idx * strides.data[i - 1];
+        tmp /= shape.data[i - 1];
+      }
+      out[gid] = a[a_idx];
+      /// END SOLUTION
+    }
+```
+
+
+
+### Compact & Setitem
 ```cpp
 void Compact(const AlignedArray &a, AlignedArray *out, std::vector<int32_t> shape, std::vector<int32_t> strides, size_t offset){
 /**
