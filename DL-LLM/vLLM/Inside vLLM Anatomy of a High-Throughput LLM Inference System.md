@@ -128,7 +128,7 @@ KV-cache 管理器维护一个 `free_block_queue` - 一个可用的 KV-cache 块
     - 运行一个虚拟/性能分析的前向传播，并获取 GPU 内存快照，以计算可用 VRAM 中可以容纳多少 KV cache 块
     - 分配、重塑并将 KV cache 张量绑定到注意力层
     - 准备注意力元数据（例如将后端设置为 FlashAttention），稍后在 fwd pass 期间由 kernel 消耗
-    - 除非提供了 `--enforce-eager`，否则对于每个预热批次大小，进行一次虚拟运行并捕获 CUDA graphs。CUDA graphs 将整个 GPU 工作序列记录到一个 DAG 中。稍后在 fwd pass 期间，我们启动/重放预先准备好的 graphs，从而减少 kernel 启动开销，进而提高延迟。
+    - 除非提供了 `--enforce-eager`，否则对于每个预热批次大小，进行一次**虚拟运行**并捕获 CUDA graphs。CUDA graphs 将整个 GPU 工作序列记录到一个 DAG 中。稍后在 fwd pass 期间，我们启动/重放预先准备好的 graphs，从而减少 kernel 启动开销，进而提高延迟。
 
 我在这里抽象掉了许多底层细节——但这些是我现在要介绍的核心部分，因为我将在接下来的部分中反复引用它们。
 
@@ -228,13 +228,9 @@ slot_mapping: 将逻辑的token id映射到实际的KVCache的物理槽位(slot)
 接下来，我们将深入探讨：
 
 1. Chunked Prefill
-
 2. Prefix Caching
-
 3. Guided Decoding（通过基于语法的有限状态机）
-
 4. Speculative Decoding
-
 5. Disaggregated P/D (prefill/decoding)
 
 ### Chunked Prefill
@@ -245,7 +241,7 @@ Chunked Prefill 是一种通过将其 prefill 步骤拆分成更小的块来处�
 
 这是同一个例子的图示：
 
-[图 5：Chunked Prefill](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/)
+![图 5：Chunked Prefill](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/chunked_pt1.png)
 
 实现很简单：限制每个步骤的新 token 数量。如果请求的数量超过 `long_prefill_token_threshold`，则将其重置为该确切值。底层的索引逻辑（前面描述的）会处理剩下的事情。
 
