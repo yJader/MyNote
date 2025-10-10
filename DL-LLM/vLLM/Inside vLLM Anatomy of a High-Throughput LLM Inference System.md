@@ -96,15 +96,10 @@ if __name__ == "__main__":
 Engine Core 本身由几个子组件组成：
 
 - **Model Executor**（驱动模型的前向传播，我们目前处理的是 `UniProcExecutor`，它在单个 GPU 上有一个 `Worker` 进程）。我们将逐步升级到支持多个 GPU 的 `MultiProcExecutor`。
-
 - **Structured Output Manager**（用于 Guided Decoding - 我们稍后会介绍）
-
 - **Scheduler**（决定哪些请求进入下一个引擎步骤）- 它进一步包含：
-
   - 策略设置 - 可以是 **FCFS**（先到先得）或 **priority**（高优先级的请求先被服务）
-
   - `waiting` 和 `running` 队列
-
   - **KV Cache Manager** - Paged Attention [3] 的核心
 
 KV-cache 管理器维护一个 `free_block_queue` - 一个可用的 KV-cache 块池（通常有几十万个，取决于 VRAM 大小和块大小）。在 Paged Attention 期间，这些块作为索引结构，将 token 映射到其计算出的 KV cache 块。
@@ -188,54 +183,42 @@ KV-cache 管理器维护一个 `free_block_queue` - 一个可用的 KV-cache 块
 V1 调度器可以在同一步骤中混合这两种类型的请求，这要归功于更智能的设计选择。相比之下，V0 引擎一次只能处理 prefill 或 decode。
 
 调度器优先处理 decode 请求——即那些已经在 `running` 队列中的请求。对于每个这样的请求，它：
-
 1. 计算要生成的新 token 的数量（由于 speculative decoding 和异步调度，不总是 1——稍后会详细介绍）。
 2. 调用 KV-cache 管理器的 `allocate_slots` 函数（详见下文）。
 3. 通过从第 1 步的 token 数量中减去来更新 token 预算。
 
 之后，它处理来自 `waiting` 队列的 prefill 请求，它：
-
 1. 检索已计算块的数量（如果禁用了 prefix caching，则返回 0——我们稍后会介绍）。
 2. 调用 KV-cache 管理器的 `allocate_slots` 函数。
 3. 从 waiting 队列中弹出请求并将其移动到 running 队列，将其状态设置为 `RUNNING`。
 4. 更新 token 预算。
 
 现在让我们看看 `allocate_slots` 做了什么，它：
-
 1. **计算块数** — 确定必须分配多少个新的 KV-cache 块 (`n`)。每个块默认存储 16 个 token。例如，如果一个 prefill 请求有 17 个新 token，我们需要 `ceil(17/16) = 2` 个块。
-2. **检查可用性** — 如果管理器池中没有足够的块，则提前退出。根据是 decode 还是 prefill 请求，引擎可能会尝试重新计算抢占（V0 中支持交换抢占），方法是驱逐低优先级请求（调用 `kv_cache_manager.free` 将 KV 块返回到块池），或者它可能会跳过调度并继续执行。
+2. **检查可用性** — 如果管理器池中没有足够的块，则**提前退出**。根据是 decode 还是 prefill 请求，引擎可能会尝试重新计算抢占（V0 中支持交换抢占），方法是驱逐低优先级请求（调用 `kv_cache_manager.free` 将 KV 块返回到块池），或者它可能会跳过调度并继续执行。
 3. **分配块** — 通过 KV-cache 管理器的协调器，从块池（前面提到的 `free_block_queue` 双向链表）中获取前 `n` 个块。存储到 `req_to_blocks`，这是一个将每个 `request_id` 映射到其 KV-cache 块列表的字典。
 
-[图 3：KV cache 块列表](https://blog.vllm.ai/2025/09/05/anatomy-of-vllm.html#llm-engine--engine-core "null")
+![图 3：KV cache 块列表](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/kv_cache_blocks.png)
 
 我们终于准备好进行一次前向传播了！
-
 ### 运行前向传播
 
-我们调用 Model Executor 的 `execute_model`，它委托给 `Worker`，而 `Worker` 又委托给模型运行器。
+我们调用 Model Executor 的 `execute_model`，它委托给 `Worker`，而 `Worker` 又委托给model runner。
 
 以下是主要步骤：
-
 1. **更新状态** — 从 `input_batch` 中修剪已完成的请求；更新与 fwd pass 相关的杂项元数据（例如，每个请求的 KV cache 块，将用于索引到 paged KV cache 内存中）。
-
 2. **准备输入** — 将缓冲区从 CPU 复制到 GPU；计算位置；构建 `slot_mapping`（示例中会详细介绍）；构造注意力元数据。
-
 3. **前向传播** — 使用自定义的 paged attn kernel 运行模型。所有序列都被展平并连接成一个长的“超级序列”。位置索引和注意力掩码确保每个序列只关注自己的 token，这使得 continuous batching 无需右填充。
-
 4. **收集最后一个 token 的状态** — 提取每个序列最后一个位置的隐藏状态并计算 logits。
-
 5. **采样** — 根据采样配置（贪婪、温度、top-p、top-k 等）从计算出的 logits 中采样 token。
 
 前向传播步骤本身有两种执行模式：
-
 1. **Eager 模式** — 启用 eager execution 时运行标准的 PyTorch 前向传播。
-
 2. **“捕获”模式** — 当不强制执行 eager 时，执行/重放预先捕获的 CUDA Graph（请记住，我们在引擎构建期间的初始化 KV cache 过程中捕获了这些）。
 
 这里有一个具体的例子，应该可以清楚地说明 continuous batching 和 paged attention：
-
-[图 4：前向传播：continuous batching 和 paged attention](https://blog.vllm.ai/2025/09/05/anatomy-of-vllm.html#llm-engine--engine-core "null")
-
+![图 4：前向传播：continuous batching 和 paged attention](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/fwd_pass.png)
+slot_mapping: 将逻辑的token id映射到实际的KVCache的物理槽位(slot)位置
 ## 高级功能 — 扩展核心引擎逻辑
 
 掌握了基本的引擎流程后，我们现在可以看看高级功能。
@@ -262,7 +245,7 @@ Chunked Prefill 是一种通过将其 prefill 步骤拆分成更小的块来处�
 
 这是同一个例子的图示：
 
-[图 5：Chunked Prefill](https://blog.vllm.ai/2025/09/05/anatomy-of-vllm.html#advanced-features--extending-the-core-engine-logic "null")
+[图 5：Chunked Prefill](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/)
 
 实现很简单：限制每个步骤的新 token 数量。如果请求的数量超过 `long_prefill_token_threshold`，则将其重置为该确切值。底层的索引逻辑（前面描述的）会处理剩下的事情。
 
@@ -320,7 +303,7 @@ Prefix caching 避免了重新计算多个prompt在开头共享的 token——�
 
 接下来，引擎调用 `find_longest_cache_hit` 来检查这些哈希中是否有任何一个已经存在于 `cached_block_hash_to_block` 中。在第一个请求上，没有找到命中。
 
-[图 6：Prefix caching - 哈希函数](https://blog.vllm.ai/2025/09/05/anatomy-of-vllm.html#advanced-features--extending-the-core-engine-logic "null")
+[图 6：Prefix caching - 哈希函数](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/)
 
 然后我们调用 `allocate_slots`，它调用 `coordinator.cache_blocks`，将新的 `BlockHash` 条目与分配的 KV 块关联起来，并将它们记录在 `cached_block_hash_to_block` 中。
 
@@ -328,11 +311,11 @@ Prefix caching 避免了重新计算多个prompt在开头共享的 token——�
 
 > [!NOTE]经过许多引擎步骤后，它会分配更多的 KV cache 块，但这对于我们的示例来说无关紧要，因为前缀在 `long_prefix` 之后立即分叉了。
 
-[图 7：Prefix caching - 在 paged memory 中填充 KV](https://blog.vllm.ai/2025/09/05/anatomy-of-vllm.html#advanced-features--extending-the-core-engine-logic "null")
+[图 7：Prefix caching - 在 paged memory 中填充 KV](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/)
 
 在第二次使用相同前缀的 `generate` 调用中，重复步骤 1-3，但现在 `find_longest_cache_hit` 为所有 `n` 个块找到匹配项（通过线性搜索）。引擎可以直接重用这些 KV 块。
 
-[图 8：Prefix caching - 重用 KV](https://blog.vllm.ai/2025/09/05/anatomy-of-vllm.html#advanced-features--extending-the-core-engine-logic "null")
+[图 8：Prefix caching - 重用 KV](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/)
 
 如果原始请求仍然存在，这些块的引用计数将增加（例如增加到 2）。在这个例子中，第一个请求已经完成，所以这些块被释放回池中，它们的引用计数被重置为 0。因为我们能够从 `cached_block_hash_to_block` 中检索到它们，我们知道它们是有效的（KV cache 管理器的逻辑是这样设置的），所以我们只是再次将它们从 `free_block_queue` 中移除。
 
@@ -375,7 +358,7 @@ if __name__ == "__main__":
 
 在我给出的玩具示例中（假设是字符级分词）：在 prefill 时，FSM 会屏蔽 logits，因此只有“P”或“N”是可行的。如果采样到“P”，FSM 会移动到“Positive”分支；下一步只允许“o”，依此类推。
 
-[图 9：玩具示例 FSM](https://blog.vllm.ai/2025/09/05/anatomy-of-vllm.html#advanced-features--extending-the-core-engine-logic "null")
+[图 9：玩具示例 FSM](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/)
 
 这在 vLLM 中是如何工作的：
 
@@ -401,7 +384,7 @@ if __name__ == "__main__":
 
 这是一个更简单的例子，词汇表大小为 8，使用 8 位整数（对于那些喜欢我的图示的人）：
 
-[图 10：玩具示例](https://blog.vllm.ai/2025/09/05/anatomy-of-vllm.html#advanced-features--extending-the-core-engine-logic "null")
+[图 10：玩具示例](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/)
 
 您可以在 vLLM 中通过传入所需的 `guided_decoding` 配置来启用此功能。
 
@@ -501,7 +484,7 @@ if __name__ == "__main__":
 
 内化这一点的最佳方法是启动调试器并单步执行代码库，但希望本节能让您对此有所了解。这个也是：
 
-[图 11：Speculative Decoding](https://blog.vllm.ai/2025/09/05/anatomy-of-vllm.html#advanced-features--extending-the-core-engine-logic "null")
+[图 11：Speculative Decoding](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/)
 
 ### Disaggregated P/D
 
@@ -615,7 +598,7 @@ if __name__ == "__main__":
 
 这是一个图示示例：
 
-[图 12：disaggregated P/D](https://blog.vllm.ai/2025/09/05/anatomy-of-vllm.html#advanced-features--extending-the-core-engine-logic "null")
+[图 12：disaggregated P/D](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/)
 
 > **附加说明：**
 >
