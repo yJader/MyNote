@@ -251,7 +251,7 @@ Chunked Prefill 是一种通过将其 prefill 步骤拆分成更小的块来处�
 
 为了解释 prefix caching 的工作原理，让我们对原始代码示例稍作调整：
 
-```
+```python
 from vllm import LLM, SamplingParams
 
 long_prefix = "<a piece of text that is encoded into more than block_size tokens>"
@@ -331,7 +331,7 @@ Guided decoding 是一种技术，在每个 decoding 步骤中，logits 都受�
 
 为了让这不那么抽象，让我们从最简单的例子开始，在我们早期的代码上构建：
 
-```
+```python
 from vllm import LLM, SamplingParams
 from vllm.sampling_params import GuidedDecodingParams
 
@@ -426,7 +426,7 @@ vLLM V1 不支持 LLM draft model 方法，而是实现了更快但不太准确�
 
 以下是如何在 vLLM 中使用 `ngram` 作为 draft 方法来调用 speculative decoding：
 
-```
+```python
 from vllm import LLM, SamplingParams
 
 prompts = [
@@ -498,7 +498,7 @@ Prefill 和 decode 具有非常不同的性能概况（计算密集型 vs. 内�
 
 我们启动 2 个 vLLM 实例（GPU 0 用于 prefill，GPU 1 用于 decode），然后在它们之间传输 KV cache：
 
-```
+```python
 import os
 import time
 from multiprocessing import Event, Process
@@ -666,7 +666,7 @@ if __name__ == "__main__":
 
 在第一个节点上，以无头模式运行引擎（无 API 服务器），并使用以下参数：
 
-```
+```bash
 vllm serve <model-name> \
   --tensor-parallel-size 4 \
   --data-parallel-size 4 \
@@ -683,7 +683,7 @@ vllm serve <model-name> \
 
 - 修改 DP 起始 rank
 
-```
+```bash
 vllm serve <model-name> \
   --tensor-parallel-size 4 \
   --data-parallel-size 4 \
@@ -789,7 +789,7 @@ DP 协调器在前端（API 服务器）和后端（引擎核心）之间进行�
 
 您从终端发送：
 
-```
+```bash
 curl -X POST http://localhost:8000/v1/completions -H "Content-Type: application/json" -d '{
   "model": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
   "prompt": "The capital of France is",
@@ -886,7 +886,7 @@ vLLM 提供了一个 `vllm bench {serve,latency,throughput}` CLI，它包装了 
 
 以下是如何运行延迟脚本的示例：
 
-```
+```bash
 vllm bench latency \
   --model <model-name> \
   --input-tokens 32 \
