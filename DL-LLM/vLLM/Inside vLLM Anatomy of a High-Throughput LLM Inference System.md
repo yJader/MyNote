@@ -277,7 +277,10 @@ Prefix caching 避免了重新计算多个prompt在开头共享的 token——�
 
 关键部分是 `long_prefix`：它被定义为任何长于一个 KV-cache 块（默认为 16 个 token）的前缀。为了简化我们的示例，我们假设 `long_prefix` 的长度正好是 `n x block_size`（其中 `n ≥ 1`）。
 
-> [!NOTE]即它与块边界完美对齐——否则我们将不得不重新计算 `long_prefix_len % block_size` 个 token，因为我们无法缓存不完整的块。
+> [!NOTE]
+> 即它与块边界完美对齐——否则我们将不得不重新计算 `long_prefix_len % block_size` 个 token，因为我们无法缓存不完整的块。
+> 
+> Q: 那如果没有对齐, 是选择空出block, 还是每次拼接后都重算呢?
 
 如果没有 prefix caching，每次我们处理一个具有相同 `long_prefix` 的新请求时，我们都会重新计算所有 `n x block_size` 个 token。
 
@@ -291,7 +294,11 @@ Prefix caching 避免了重新计算多个prompt在开头共享的 token——�
 
 2. 对于每个完整的块，它计算一个哈希（使用内置哈希或 SHA-256，后者较慢但冲突较少）。该哈希结合了前一个块的哈希、当前 token 和可选的元数据。
 
-> [!NOTE]可选的元数据包括：MM 哈希、LoRA ID、缓存盐（注入到第一个块的哈希中，确保只有具有此缓存盐的请求才能重用块）。
+> [!NOTE]
+> 可选的元数据包括：
+> - MM hash: **Multi-Model Hash 多模态Hash**, 组合图片和文本进行特征编码, 得到总体的Hash
+> - LoRA ID: **Low-Rank Adapter**, 
+> - cache salt（注入到第一个块的哈希中，确保只有具有此缓存盐的请求才能重用块）。
 
 3. 每个结果都存储为一个 `BlockHash` 对象，包含哈希及其 token ID。我们返回一个块哈希列表。
 
@@ -299,7 +306,7 @@ Prefix caching 避免了重新计算多个prompt在开头共享的 token——�
 
 接下来，引擎调用 `find_longest_cache_hit` 来检查这些哈希中是否有任何一个已经存在于 `cached_block_hash_to_block` 中。在第一个请求上，没有找到命中。
 
-[图 6：Prefix caching - 哈希函数](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/)
+![图 6：Prefix caching - 哈希函数](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/prefix_pt1.png)
 
 然后我们调用 `allocate_slots`，它调用 `coordinator.cache_blocks`，将新的 `BlockHash` 条目与分配的 KV 块关联起来，并将它们记录在 `cached_block_hash_to_block` 中。
 
@@ -307,11 +314,11 @@ Prefix caching 避免了重新计算多个prompt在开头共享的 token——�
 
 > [!NOTE]经过许多引擎步骤后，它会分配更多的 KV cache 块，但这对于我们的示例来说无关紧要，因为前缀在 `long_prefix` 之后立即分叉了。
 
-[图 7：Prefix caching - 在 paged memory 中填充 KV](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/)
+![图 7：Prefix caching - 在 paged memory 中填充 KV](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/)
 
 在第二次使用相同前缀的 `generate` 调用中，重复步骤 1-3，但现在 `find_longest_cache_hit` 为所有 `n` 个块找到匹配项（通过线性搜索）。引擎可以直接重用这些 KV 块。
 
-[图 8：Prefix caching - 重用 KV](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/)
+![图 8：Prefix caching - 重用 KV](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/)
 
 如果原始请求仍然存在，这些块的引用计数将增加（例如增加到 2）。在这个例子中，第一个请求已经完成，所以这些块被释放回池中，它们的引用计数被重置为 0。因为我们能够从 `cached_block_hash_to_block` 中检索到它们，我们知道它们是有效的（KV cache 管理器的逻辑是这样设置的），所以我们只是再次将它们从 `free_block_queue` 中移除。
 
@@ -354,7 +361,7 @@ if __name__ == "__main__":
 
 在我给出的玩具示例中（假设是字符级分词）：在 prefill 时，FSM 会屏蔽 logits，因此只有“P”或“N”是可行的。如果采样到“P”，FSM 会移动到“Positive”分支；下一步只允许“o”，依此类推。
 
-[图 9：玩具示例 FSM](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/)
+![图 9：玩具示例 FSM](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/)
 
 这在 vLLM 中是如何工作的：
 
@@ -380,7 +387,7 @@ if __name__ == "__main__":
 
 这是一个更简单的例子，词汇表大小为 8，使用 8 位整数（对于那些喜欢我的图示的人）：
 
-[图 10：玩具示例](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/)
+![图 10：玩具示例](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/)
 
 您可以在 vLLM 中通过传入所需的 `guided_decoding` 配置来启用此功能。
 
@@ -480,7 +487,7 @@ if __name__ == "__main__":
 
 内化这一点的最佳方法是启动调试器并单步执行代码库，但希望本节能让您对此有所了解。这个也是：
 
-[图 11：Speculative Decoding](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/)
+![图 11：Speculative Decoding](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/)
 
 ### Disaggregated P/D
 
@@ -594,7 +601,7 @@ if __name__ == "__main__":
 
 这是一个图示示例：
 
-[图 12：disaggregated P/D](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/)
+![图 12：disaggregated P/D](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/)
 
 > **附加说明：**
 >
@@ -622,7 +629,7 @@ if __name__ == "__main__":
 
 在这个阶段，我们需要多个 GPU 进程（worker）和一个协调它们的编排层。这正是 `MultiProcExecutor` 所提供的。
 
-[图 13：TP=8 设置中的 MultiProcExecutor（驱动 worker 为 rank 0）](https://blog.vllm.ai/2025/09/05/anatomy-of-vllm.html#from-uniprocexecutor-to-multiprocexecutor "null")
+![图 13：TP=8 设置中的 MultiProcExecutor（驱动 worker 为 rank 0）](https://blog.vllm.ai/2025/09/05/anatomy-of-vllm.html#from-uniprocexecutor-to-multiprocexecutor "null")
 
 这在 vLLM 中是如何工作的：
 
@@ -662,7 +669,7 @@ if __name__ == "__main__":
 
 如果模型需要 `TP=4`，我们可以这样配置节点。
 
-[图 14：具有 2 个 8xH100 节点的服务器配置（1 个无头，1 个 api 服务器）](https://blog.vllm.ai/2025/09/05/anatomy-of-vllm.html#distributed-system-serving-vllm "null")
+![图 14：具有 2 个 8xH100 节点的服务器配置（1 个无头，1 个 api 服务器）](https://blog.vllm.ai/2025/09/05/anatomy-of-vllm.html#distributed-system-serving-vllm "null")
 
 在第一个节点上，以无头模式运行引擎（无 API 服务器），并使用以下参数：
 
@@ -723,7 +730,7 @@ vllm serve <model-name> \
 
 TL;DR: 我们最终得到 4 个子进程（每个 DP 副本一个），每个进程运行一个主、输入和输出线程。它们与 DP 协调器和前端完成协调握手，然后每个进程的三个线程都在稳态忙碌循环中运行。
 
-[图 15：具有 4 个 DP 副本运行 4 个 DPEngineCoreProc 的分布式系统](https://blog.vllm.ai/2025/09/05/anatomy-of-vllm.html#distributed-system-serving-vllm "null")
+![图 15：具有 4 个 DP 副本运行 4 个 DPEngineCoreProc 的分布式系统](https://blog.vllm.ai/2025/09/05/anatomy-of-vllm.html#distributed-system-serving-vllm "null")
 
 **当前稳态**：
 
@@ -858,7 +865,7 @@ curl -X POST http://localhost:8000/v1/completions -H "Content-Type: application/
 |`Throughput`|每秒处理的总 token 数（输入、输出或两者），或者每秒请求数|
 |`Goodput`|满足服务级别目标 (SLO) 的吞吐量，例如最大 TTFT、TPOT 或 e2e 延迟。例如，只计算满足这些 SLO 的请求中的 token|
 
-[图 16：ttft, itl, e2e 延迟](https://blog.vllm.ai/2025/09/05/anatomy-of-vllm.html#benchmarks-and-auto-tuning---latency-vs-throughput "null")
+![图 16：ttft, itl, e2e 延迟](https://blog.vllm.ai/2025/09/05/anatomy-of-vllm.html#benchmarks-and-auto-tuning---latency-vs-throughput "null")
 
 这是一个解释这两个指标竞争性质的简化模型。
 
@@ -868,7 +875,7 @@ curl -X POST http://localhost:8000/v1/completions -H "Content-Type: application/
 
 一个 roofline 模型有助于理解这一点：在饱和批次 `B_sat` 以下，步骤时间由 HBM 带宽主导（逐层将权重流式传输到片上内存），因此步骤延迟几乎是平坦的——计算 1 个 vs 10 个 token 可能需要相似的时间。超过 `B_sat`，kernel 变得受计算限制，步骤时间大致随 `B` 增长；每个额外的 token 都会增加 ITL。
 
-[图 17：roofline 性能模型](https://blog.vllm.ai/2025/09/05/anatomy-of-vllm.html#benchmarks-and-auto-tuning---latency-vs-throughput "null")
+![图 17：roofline 性能模型](https://blog.vllm.ai/2025/09/05/anatomy-of-vllm.html#benchmarks-and-auto-tuning---latency-vs-throughput "null")
 
 > **注意：** 为了更严谨地处理，我们必须考虑 kernel 自动调优：随着 `B` 的增长，运行时可能会切换到对该形状更有效的 kernel，从而改变实现的性能 `P_kernel`。步骤延迟为 `t = FLOPs_step / P_kernel`，其中 `FLOPs_step` 是该步骤中的工作量。您可以看到，当 `P_kernel` 达到 `P_peak` 时，每一步更多的计算将直接导致延迟增加。
 
