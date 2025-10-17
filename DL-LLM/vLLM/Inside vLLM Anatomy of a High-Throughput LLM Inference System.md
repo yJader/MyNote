@@ -453,25 +453,17 @@ if __name__ == "__main__":
 **设置（在引擎构建期间）：**
 
 1. 初始化设备：创建一个 `drafter`（draft model，例如，`NgramProposer`）和一个 `rejection_sampler`（其部分是用 Triton 编写的）。
-
 2. 加载模型：加载 draft model 权重（对于 n-gram 是无操作）。
 
 **之后在 `generate` 函数中**（假设我们得到一个全新的请求）：
 
 1. 使用大型模型运行常规的 prefill 步骤。
-
 2. 在前向传播和标准采样之后，调用 `propose_draft_token_ids(k)` 从 draft model 中采样 `k` 个 draft token。
-
 3. 将这些存储在 `request.spec_token_ids` 中（更新请求元数据）。
-
 4. 在下一个引擎步骤中，当请求在 running 队列中时，将 `len(request.spec_token_ids)` 添加到“新 token”计数中，以便 `allocate_slots` 为 fwd pass 保留足够的 KV 块。
-
 5. 将 `spec_token_ids` 复制到 `input_batch.token_ids_cpu` 中以形成（上下文 + draft）token。
-
 6. 通过 `_calc_spec_decode_metadata` 计算元数据（这将从 `input_batch.token_ids_cpu` 复制 token，准备 logits 等），然后在 draft token 上运行大型模型的前向传播。
-
 7. 不从 logits 进行常规采样，而是使用 `rejection_sampler` 从左到右接受/拒绝并产生 `output_token_ids`。
-
 8. 重复步骤 2-7 直到满足停止条件。
 
 内化这一点的最佳方法是启动调试器并单步执行代码库，但希望本节能让您对此有所了解。这个也是：
