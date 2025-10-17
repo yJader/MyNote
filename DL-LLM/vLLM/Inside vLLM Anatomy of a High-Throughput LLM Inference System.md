@@ -292,19 +292,19 @@ Prefix caching 避免了重新计算多个prompt在开头共享的 token——�
 
 1. 此函数将 `long_prefix + prompts[0]` 拆分成 16 个 token 的块。
 
-2. 对于每个完整的块，它计算一个哈希（使用内置哈希或 SHA-256，后者较慢但冲突较少）。该哈希结合了前一个块的哈希、当前 token 和可选的元数据。
+2. 对于每个完整的块，它计算一个哈希（使用内置哈希或 SHA-256，后者较慢但冲突较少）。该哈希结合了**前一个块的哈希**、**当前 token** 和可选的**元数据**。
 
 > [!NOTE]
 > 可选的元数据包括：
 > - MM hash: **Multi-Model Hash 多模态Hash**, 组合图片和文本进行特征编码, 得到总体的Hash
-> - LoRA ID: **Low-Rank Adapter**, 
-> - cache salt（注入到第一个块的哈希中，确保只有具有此缓存盐的请求才能重用块）。
+> - LoRA ID: **Low-Rank Adapter**, 使用不同的低秩矩阵进行参数微调, 实现模型定制和任务迁移
+> - cache salt: 注入到**第一个块**的哈希中，确保只有具有此缓存盐的请求才能重用块
 
 3. 每个结果都存储为一个 `BlockHash` 对象，包含哈希及其 token ID。我们返回一个块哈希列表。
 
 该列表存储在 `self.req_to_block_hashes[request_id]` 中。
 
-接下来，引擎调用 `find_longest_cache_hit` 来检查这些哈希中是否有任何一个已经存在于 `cached_block_hash_to_block` 中。在第一个请求上，没有找到命中。
+接下来，引擎调用 `find_longest_cache_hit` 来检查这些block hash中是否有任何一个已经存在于 `cached_block_hash_to_block` 中。在此处的第一个请求上，没有找到命中。
 
 ![图 6：Prefix caching - 哈希函数](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/prefix_pt1.png)
 
@@ -312,17 +312,19 @@ Prefix caching 避免了重新计算多个prompt在开头共享的 token——�
 
 之后，前向传播将在 paged KV cache 内存中填充与我们上面分配的 KV cache 块相对应的 KV。
 
-> [!NOTE]经过许多引擎步骤后，它会分配更多的 KV cache 块，但这对于我们的示例来说无关紧要，因为前缀在 `long_prefix` 之后立即分叉了。
+> [!NOTE]
+> 经过许多引擎步骤后，它会分配更多的 KV cache 块，但这对于我们的示例来说无关紧要，因为前缀在 `long_prefix` 之后立即分叉了。
 
-![图 7：Prefix caching - 在 paged memory 中填充 KV](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/)
+![图 7：Prefix caching - 在 paged memory 中填充 KV](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/prefix_pt2.png)
 
 在第二次使用相同前缀的 `generate` 调用中，重复步骤 1-3，但现在 `find_longest_cache_hit` 为所有 `n` 个块找到匹配项（通过线性搜索）。引擎可以直接重用这些 KV 块。
 
-![图 8：Prefix caching - 重用 KV](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/)
+![图 8：Prefix caching - 重用 KV](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/prefix_pt3.png)
 
 如果原始请求仍然存在，这些块的引用计数将增加（例如增加到 2）。在这个例子中，第一个请求已经完成，所以这些块被释放回池中，它们的引用计数被重置为 0。因为我们能够从 `cached_block_hash_to_block` 中检索到它们，我们知道它们是有效的（KV cache 管理器的逻辑是这样设置的），所以我们只是再次将它们从 `free_block_queue` 中移除。
 
-> **高级说明：** KV-cache 块只有在它们即将从 `free_block_queue`（从左侧弹出）重新分配时才会失效，并且我们发现该块仍然具有关联的哈希并且存在于 `cached_block_hash_to_block` 中。在那一刻，我们清除该块的哈希并将其条目从 `cached_block_hash_to_block` 中移除，确保它不能通过 prefix caching 重用（至少不能用于那个旧前缀）。
+> [!NOTE] Advanced note:
+> KV-cache 块只有在它们即将从 `free_block_queue`（从左侧弹出）重新分配时才会失效，并且我们发现该块仍然具有关联的哈希并且存在于 `cached_block_hash_to_block` 中。在那一刻，我们清除该块的哈希并将其条目从 `cached_block_hash_to_block` 中移除，确保它不能通过 prefix caching 重用（至少不能用于那个旧前缀）。
 
 这就是 prefix caching 的要点：不要重新计算你已经见过的 prefixes——只需重用它们的 KV cache！
 
@@ -332,9 +334,9 @@ Prefix caching 默认启用。要禁用它：`enable_prefix_caching = False`。
 
 ### Guided Decoding (FSM)
 
-Guided decoding 是一种技术，在每个 decoding 步骤中，logits 都受到基于语法的有限状态机的约束。这确保了只有语法允许的 token 才能被采样。
+Guided decoding 是一种技术，在每个 decoding 步骤中，logits 都受到基于语法的有限状态机的约束。**这确保了只有语法允许的 token 才能被采样。**
 
-这是一个强大的设置：你可以强制执行从正则语法（乔姆斯基 3 型，例如任意正则表达式模式）到上下文无关语法（2 型，涵盖大多数编程语言）的任何内容。
+这是一个强大的设置：你可以强制执行从正则语法（Chomsky type-3，例如任意正则表达式模式）到上下文无关语法（type-2，涵盖大多数编程语言）的任何内容。
 
 为了让这不那么抽象，让我们从最简单的例子开始，在我们早期的代码上构建：
 
@@ -361,33 +363,28 @@ if __name__ == "__main__":
 
 在我给出的玩具示例中（假设是字符级分词）：在 prefill 时，FSM 会屏蔽 logits，因此只有“P”或“N”是可行的。如果采样到“P”，FSM 会移动到“Positive”分支；下一步只允许“o”，依此类推。
 
-![图 9：玩具示例 FSM](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/)
+![图 9：玩具示例 FSM](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/fsm.png)
 
 这在 vLLM 中是如何工作的：
 
 1. 在 LLM 引擎构建时，会创建一个 `StructuredOutputManager`；它可以访问 tokenizer 并维护一个 `_grammar_bitmask` 张量。
-
 2. 添加请求时，其状态设置为 `WAITING_FOR_FSM`，`grammar_init` 选择后端编译器（例如，`xgrammar` [7]；注意后端是第三方代码）。
-
 3. 此请求的语法是异步编译的。
-
 4. 在调度期间，如果异步编译已完成，状态将切换到 `WAITING`，并将 `request_id` 添加到 `structured_output_request_ids`；否则将其放入 `skipped_waiting_requests` 以在下一个引擎步骤中重试。
-
 5. 在调度循环之后（仍在调度内部），如果有 FSM 请求，`StructuredOutputManager` 会要求后端准备/更新 `_grammar_bitmask`。
-
 6. 在前向传播产生 logits 之后，xgr_torch_compile 的函数将位掩码扩展到词汇表大小（使用 32 位整数时扩展比为 32x）并将不允许的 logits 屏蔽为 –∞。
-
 7. 采样下一个 token 后，通过 `accept_tokens` 推进请求的 FSM。在 FSM 图上，我们视觉上移动到下一个状态。
 
 第 6 步值得进一步说明。
 
 如果 `vocab_size = 32`，`_grammar_bitmask` 是一个整数；其二进制表示编码了哪些 token 是允许的（“1”）与不允许的（“0”）。例如，“101…001”扩展为一个长度为 32 的数组 `[1, 0, 1, ..., 0, 0, 1]`；位置为 0 的 logits 被设置为 –∞。对于更大的词汇表，使用多个 32 位字并相应地扩展/连接。后端（例如，`xgrammar`）负责使用当前的 FSM 状态生成这些位模式。
 
-> [!NOTE]这里的大部分复杂性都隐藏在像 xgrammar 这样的第三方库中。
+> [!NOTE]
+> 这里的大部分复杂性都隐藏在像 xgrammar 这样的第三方库中。
 
 这是一个更简单的例子，词汇表大小为 8，使用 8 位整数（对于那些喜欢我的图示的人）：
 
-![图 10：玩具示例](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/)
+![图 10：玩具示例](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/fsm2.png)
 
 您可以在 vLLM 中通过传入所需的 `guided_decoding` 配置来启用此功能。
 
@@ -395,40 +392,32 @@ if __name__ == "__main__":
 
 在自回归生成中，每个新 token 都需要对大型 LM 进行一次前向传播。这很昂贵——每一步都要重新加载和应用所有模型权重，只为了计算一个 token！（假设 batch size == 1，通常是 `B`）
 
-Speculative decoding [8] 通过引入一个较小的 draft LM 来加速这一过程。draft LM 可以廉价地提出 `k` 个 token。但我们最终不想从较小的模型中采样——它只是用来猜测候选的延续。大型模型仍然决定什么是有效的。
+Speculative decoding(投机解码) [8] 通过引入一个较小的 draft LM 来加速这一过程。draft LM 可以廉价地提出 *(未来连续的)* `k` 个 token。但我们最终不想从较小的模型中采样——它只是用来猜测候选的延续。大型模型仍然决定什么是有效的。
 
 以下是步骤：
 
 1. **Draft**：在当前上下文中运行小型模型并提出 `k` 个 token
-
 2. **Verify**：在上下文 + `k` 个 draft token 上运行一次大型模型。这将为这 `k` 个位置加上一个额外的位置产生概率（所以我们得到 `k+1` 个候选）
-
 3. **Accept/reject**：从左到右遍历 `k` 个 draft token：
-
     - 如果大型模型对 draft token 的概率 ≥ draft 模型的概率，则接受它
-
     - 否则，以 `p_large(token)/p_draft(token)` 的概率接受它
-
     - 在第一次拒绝时停止，或接受所有 `k` 个 draft token
-
         - 如果所有 `k` 个 draft token 都被接受，也从大型模型中“免费”采样额外的第 `(k+1)` 个 token（我们已经计算了该分布）
-
         - 如果发生拒绝，则在该位置创建一个新的重新平衡的分布（`p_large - p_draft`，将最小值钳位在 0，归一化以使总和为 1）并从中采样最后一个 token
 
 **为什么这行得通**：虽然我们使用小型模型来提出候选，但接受/拒绝规则保证了序列在期望上与我们逐个 token 从大型模型中采样完全相同。这意味着 speculative decoding 在统计上等同于标准的自回归 decoding——但可能快得多，因为一次大型模型的前向传播最多可以产生 `k+1` 个 token。
 
-> [!NOTE]我建议查看 [gpt-fast](https://github.com/meta-pytorch/gpt-fast "null") 以获取简单的实现，以及[原始论文](https://arxiv.org/abs/2302.01318 "null")以了解数学细节和与从完整模型采样等效的证明。
+> [!NOTE]
+> 我建议查看 [gpt-fast](https://github.com/meta-pytorch/gpt-fast "null") 以获取简单的实现，以及[原始论文](https://arxiv.org/abs/2302.01318 "null")以了解数学细节和与从完整模型采样等效的证明。
 
 vLLM V1 不支持 LLM draft model 方法，而是实现了更快但不太准确的提议方案：n-gram、EAGLE [9] 和 Medusa [10]。
 
 每个方案的一句话总结：
 
 - **n-gram**：取最后 `prompt_lookup_max` 个 token；在序列中找到一个先前的匹配项；如果找到，则提出该匹配项后面的 `k` 个 token；否则减少窗口并重试直到 `prompt_lookup_min`
-
-> [!NOTE]当前的实现返回第一个匹配项后的 `k` 个 token。引入一个近因偏见并反转搜索方向似乎更自然？（即最后一个匹配项）
-
+> [!NOTE]
+> 当前的实现返回第一个匹配项后的 `k` 个 token。引入一个近因偏见并反转搜索方向似乎更自然？（即最后一个匹配项）
 - **Eagle**：对大型 LM 进行“模型手术”——保留 embeddings 和 LM head，用一个轻量级的 MLP 替换 Transformer 堆栈；将其微调为一个廉价的 draft
-
 - **Medusa**：在大型模型的顶部（LM head 之前的 embeddings）训练辅助线性头，以并行预测接下来的 `k` 个 token；使用这些头比运行一个单独的小型 LM 更有效地提出 token
 
 以下是如何在 vLLM 中使用 `ngram` 作为 draft 方法来调用 speculative decoding：
