@@ -563,14 +563,13 @@ if __name__ == "__main__":
   prefill_process.terminate()
 ```
 
-> [!NOTE]我也尝试过 `LMCache` [11]，它是最快的生产就绪连接器（使用 NVIDIA 的 NIXL 作为后端），但它仍处于前沿，我遇到了一些错误。由于其大部分复杂性存在于外部仓库中，因此 `SharedStorageConnector` 是一个更好的解释选择。
+> [!NOTE]
+> 我也尝试过 `LMCache` [11]，它是最快的生产级的连接器（使用 NVIDIA 的 NIXL 作为后端），但它仍处于前沿，我遇到了一些错误。由于其大部分复杂性存在于外部仓库中，因此 `SharedStorageConnector` 是一个更好的解释选择。
 
 以下是 vLLM 中的步骤：
 
 1. **实例化** — 在引擎构建期间，在两个地方创建连接器：
-
     - 在 worker 的 init device 过程中（在 init worker 分布式环境函数下），角色为“worker”。
-
     - 在调度器构造函数中，角色为“scheduler”。
 
 2. **缓存查找** — 当调度器处理来自 `waiting` 队列的 prefill 请求时（在本地 prefix-cache 检查之后），它会调用连接器的 `get_num_new_matched_tokens`。这会在 KV-cache 服务器中检查外部缓存的 token。Prefill 在这里总是看到 0；decode 可能会有缓存命中。在调用 `allocate_slots` 之前，将结果添加到本地计数中。
@@ -578,15 +577,11 @@ if __name__ == "__main__":
 3. **状态更新** — 调度器然后调用 `connector.update_state_after_alloc`，它记录了有缓存的请求（对 prefill 是无操作）。
 
 4. **构建元数据对象** — 在调度结束时，调度器调用 `meta = connector.build_connector_meta`：
-
     - Prefill 添加所有 `is_store=True` 的请求（以上传 KV）。
-
     - Decode 添加 `is_store=False` 的请求（以获取 KV）。
 
 5. **上下文管理器** — 在前向传播之前，引擎进入一个 KV-connector 上下文管理器：
-
     - 进入时：调用 `kv_connector.start_load_kv`。对于 decode，这将从外部服务器加载 KV 并将其注入到 paged memory 中。对于 prefill，这是一个无操作。
-
     - 退出时：调用 `kv_connector.wait_for_save`。对于 prefill，这将阻塞直到 KV 上传到外部服务器。对于 decode，这是一个无操作。
 
 这是一个图示示例：
