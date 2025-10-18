@@ -178,7 +178,7 @@ KV-cache 管理器维护一个 `free_block_queue` - 一个可用的 KV-cache 块
 2. **Decode** 请求 — 仅对最新的一个 token 进行一次前向传播。所有早期的 KV 向量都已经被缓存。这些是**内存带宽密集型**的，因为我们仍然需要加载所有 LLM 权重（和 KV caches）才能计算一个 token。
 
 > [!NOTE]
-> 在[基准测试部分](https://blog.vllm.ai/2025/09/05/anatomy-of-vllm.html#benchmarks-and-auto-tuning---latency-vs-throughput "null")，我们将分析所谓的 GPU 性能的 roofline 模型。这将更详细地探讨 prefill/decode 的性能概况。
+> 在[基准测试部分](#基准测试和自动调优-延迟vs吞吐量)，我们将分析所谓的 GPU 性能的 roofline 模型。这将更详细地探讨 prefill/decode 的性能概况。
 
 V1 调度器可以在同一步骤中混合这两种类型的请求，这要归功于更智能的设计选择。相比之下，V0 引擎一次只能处理 prefill 或 decode。
 
@@ -479,10 +479,7 @@ if __name__ == "__main__":
 
 我之前已经暗示了 disaggregated P/D (prefill/decode) 背后的动机。
 
-Prefill 和 decode 具有非常不同的性能概况（计算密集型 vs. 内存带宽密集型），因此将它们的执行分开是一种明智的设计。它对延迟提供了更严格的控制——包括 `TFTT`（首个 token 时间）和 `ITL`（token 间延迟）——更多内容将在[基准测试](https://blog.vllm.ai/2025/09/05/anatomy-of-vllm.html#benchmarks-and-auto-tuning---latency-vs-throughput "null")部分讨论。
-
-> [!NOTE]
-> decode阶段的指标有多种称呼 `ITL` (Inter-Token Latency) ,  `TOPT` (Time Per Output Token)...
+Prefill 和 decode 具有非常不同的性能概况（计算密集型 vs. 内存带宽密集型），因此将它们的执行分开是一种明智的设计。它对延迟提供了更严格的控制——包括 `TFTT`（首个 token 时间）和 `ITL`（token 间延迟）——更多内容将在[基准测试](#基准测试和自动调优-延迟vs吞吐量)部分讨论。
 
 在实践中，我们运行 `N` 个 vLLM prefill 实例和 `M` 个 vLLM decode 实例，并根据实时请求组合自动扩展它们。Prefill worker 将 KV 写入专用的 KV-cache 服务；decode worker 从中读取。这将长的、突发性的 prefill 与稳定的、对延迟敏感的 decode 隔离开来。
 
@@ -588,12 +585,10 @@ if __name__ == "__main__":
 
 ![图 12：disaggregated P/D](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/pd.png)
 
-> **附加说明：**
+> [!NOTE] **附加说明：**
 >
 > - 对于 `SharedStorageConnector`，“外部服务器”只是一个本地文件系统。
->
 > - 根据配置，KV 传输也可以逐层进行（在每个注意力层之前/之后）。
->
 > - Decode 只在其请求的第一步加载一次外部 KV；之后它在本地计算/存储。
 >
 
@@ -605,12 +600,10 @@ if __name__ == "__main__":
 
 第一个选项是使用 tensor parallelism（例如，`TP=8`）将模型分片到同一节点上的多个 GPU。如果模型仍然不适合，下一步是跨节点的 pipeline parallelism。
 
-> **注意：**
+> [!NOTE] **注意：**
 >
 > - 节点内带宽明显高于节点间带宽，这就是为什么 tensor parallelism (TP) 通常优于 pipeline parallelism (PP)。（PP 传输的数据比 TP 少也是事实。）
->
 > - 我没有涵盖 expert parallelism (EP)，因为我们专注于标准的 Transformer 而不是 MoE，也没有涵盖 sequence parallelism，因为 TP 和 PP 在实践中是最常用的。
->
 
 在这个阶段，我们需要多个 GPU 进程（worker）和一个协调它们的编排层。这正是 `MultiProcExecutor` 所提供的。
 
@@ -620,14 +613,15 @@ if __name__ == "__main__":
 
 1. `MultiProcExecutor` 初始化一个 `rpc_broadcast_mq` 消息队列（在底层使用共享内存实现）。
 2. 构造函数遍历 `world_size`（例如 `TP=8 ⇒ world_size=8`）并通过 `WorkerProc.make_worker_process` 为每个 rank 派生一个守护进程。
+	- **rank**: 分布式进程组中, 每个进程的唯一编号
 3. 对于每个 worker，父进程首先创建一个读写管道。
 4. 新进程运行 `WorkerProc.worker_main`，它实例化一个 worker（经历与 `UniprocExecutor` 中相同的“初始化设备”、“加载模型”等过程）。
 5. 每个 worker 确定它是否是驱动程序（TP 组中的 rank 0）或普通 worker。每个 worker 设置两个队列：
     - `rpc_broadcast_mq`（与父进程共享）用于接收工作。
     - `worker_response_mq` 用于发回响应。
-
 6. 在初始化期间，每个子进程通过管道将其 `worker_response_mq` 句柄发送给父进程。一旦全部收到，父进程就会解除阻塞——这完成了协调。
-7. Worker 然后进入一个忙碌循环，在 `rpc_broadcast_mq.dequeue` 上阻塞。当一个工作项到达时，它们执行它（就像在 `UniprocExecutor` 中一样，但现在使用 TP/PP 特定的分区工作）。结果通过 `worker_response_mq.enqueue` 发回。
+7. Worker 然后进入一个忙碌循环，在 `rpc_broadcast_mq.dequeue` 上阻塞。当一个work item到达时，它们执行它（就像在 `UniprocExecutor` 中一样，但现在使用 TP/PP 特定的分区工作）。结果通过 `worker_response_mq.enqueue` 发回。
+	- 每个`rpc_broadcast_mq`的work item都被
 8. 在运行时，当一个请求到达时，`MultiProcExecutor` 将其排入所有子 worker 的 `rpc_broadcast_mq`（非阻塞）。然后它在指定的输出 rank 的 `worker_response_mq.dequeue` 上等待以收集最终结果。
 
 从引擎的角度来看，没有任何改变——所有这些多进程复杂性都通过调用 Model Executor 的 `execute_model` 抽象掉了。
@@ -640,6 +634,9 @@ if __name__ == "__main__":
 下一步是横向扩展：启用 data parallelism (`DP > 1`)，跨节点复制模型，添加一个轻量级的 DP 协调层，在副本之间引入负载均衡，并在前面放置一个或多个 API 服务器来处理传入流量。
 
 ## 分布式系统服务 vLLM
+
+> [!IMPORTANT] 记录:
+> 这一段在没有上手代码的情况下有点难理解, 未来考虑重新阅读
 
 设置服务基础设施有很多方法，但为了保持具体，这里有一个例子：假设我们有两个 H100 节点，并希望在它们上面运行四个 vLLM 引擎。
 
@@ -663,7 +660,6 @@ vllm serve <model-name> \
 并在另一个节点上运行相同的命令，但稍作调整：
 
 - 无 `--headless`
-
 - 修改 DP 起始 rank
 
 ```bash
@@ -688,21 +684,13 @@ vllm serve <model-name> \
 `DPEngineCoreProc` 初始化其父 `EngineCoreProc`（`EngineCore` 的子类），它：
 
 1. 创建一个 `input_queue` 和 `output_queue` (`queue.Queue`)。
-
 2. 使用 `DEALER` ZMQ 套接字（异步消息库）与另一节点上的前端进行初始握手，并接收协调地址信息。
-
 3. 初始化 DP 组（例如使用 NCCL 后端）。
-
 4. 使用 `MultiProcExecutor` (`TP=4` on 4 GPUs，如前所述）初始化 `EngineCore`。
-
 5. 创建一个 `ready_event` (`threading.Event`)。
-
 6. 启动一个运行 `process_input_sockets(…, ready_event)` 的输入守护线程 (`threading.Thread`)。类似地启动一个输出线程。
-
 7. 仍在主线程中，等待 `ready_event`，直到跨越 2 个节点的所有 4 个进程中的所有输入线程都完成了协调握手，最终执行 `ready_event.set()`。
-
 8. 一旦解除阻塞，就向前端发送一个“就绪”消息，其中包含元数据（例如，paged KV cache 内存中可用的 `num_gpu_blocks`）。
-
 9. 然后，主、输入和输出线程进入各自的忙碌循环。
 
 TL;DR: 我们最终得到 4 个子进程（每个 DP 副本一个），每个进程运行一个主、输入和输出线程。它们与 DP 协调器和前端完成协调握手，然后每个进程的三个线程都在稳态忙碌循环中运行。
@@ -719,10 +707,10 @@ TL;DR: 我们最终得到 4 个子进程（每个 DP 副本一个），每个进
 
 - **DP wave counter** — 系统跟踪“wave”；当所有引擎都变为空闲时，它们会静止下来，当新工作到达时，计数器会增加（对协调/指标有用）。
 - **控制消息** — API 服务器可以发送的不仅仅是推理请求（例如，中止和实用程序/控制 RPC）。
-- **用于锁步的虚拟步骤** — 如果任何 DP 副本有工作，所有副本都执行一个前向步骤；没有请求的副本执行一个虚拟步骤以参与所需的同步点（避免阻塞活动副本）。
+- **用于lockstep的虚拟步骤** — 如果任何 DP 副本有工作，所有副本都执行一个前向步骤；没有请求的副本执行一个虚拟步骤以参与所需的同步点（避免阻塞活动副本）。
 
 > [!NOTE]
-> 锁步说明：这实际上只对 MoE 模型是必需的，其中 expert 层形成一个 EP 或 TP 组，而 attention 层仍然是 DP。目前总是与 DP 一起完成——这只是因为“内置”非 MoE DP 的用途有限，因为您可以只运行多个独立的 vLLM，并以正常方式在它们之间进行负载均衡。
+> Lockstep说明：这实际上只对 MoE 模型是必需的，其中 expert 层形成一个 EP 或 TP 组，而 attention 层仍然是 DP。目前总是与 DP 一起完成——这只是因为“内置”非 MoE DP 的用途有限，因为您可以只运行多个独立的 vLLM，并以正常方式在它们之间进行负载均衡。
 
 现在是第二部分，API 服务器节点上发生了什么？
 
@@ -793,11 +781,10 @@ curl -X POST http://localhost:8000/v1/completions -H "Content-Type: application/
 > **附加说明：**
 >
 > - 当添加更多 API 服务器时，负载均衡在 OS/套接字级别处理。从应用程序的角度来看，没有重大变化——复杂性是隐藏的。
->
 > - 使用 Ray 作为 DP 后端，您可以公开一个 URL 端点（`/scale_elastic_ep`），该端点可以自动扩展引擎副本的数量。
->
 
-## 基准测试和自动调优 - 延迟 vs 吞吐量
+
+## 基准测试和自动调优-延迟vs吞吐量
 
 到目前为止，我们一直在分析“气体颗粒”——请求如何在引擎/系统中流动的内部原理。现在是时候放大并从整体上看待系统，并问：我们如何衡量一个推理系统的性能？
 
@@ -812,14 +799,14 @@ curl -X POST http://localhost:8000/v1/completions -H "Content-Type: application/
 
 在解释为什么延迟和吞吐量相互竞争之前，让我们定义一些常见的推理指标：
 
-|指标|定义|
-|---|---|
-|`TTFT` (首个 token 时间)|从提交请求到收到第一个输出 token 的时间|
-|`ITL` (token 间延迟)|两个连续 token 之间的时间（例如，从 token i-1 到 token i）|
-|`TPOT` (每个输出 token 的时间)|请求中所有输出 token 的平均 ITL|
-|`Latency / E2E` (端到端延迟)|处理请求的总时间，即 TTFT + 所有 ITL 的总和，或者等效地，提交请求和接收最后一个输出 token 之间的时间|
-|`Throughput`|每秒处理的总 token 数（输入、输出或两者），或者每秒请求数|
-|`Goodput`|满足服务级别目标 (SLO) 的吞吐量，例如最大 TTFT、TPOT 或 e2e 延迟。例如，只计算满足这些 SLO 的请求中的 token|
+| 指标                      | 定义                                                                     |
+| ----------------------- | ---------------------------------------------------------------------- |
+| `TTFT` (首个 token 时间)    | 从提交请求到收到第一个输出 token 的时间                                                |
+| `ITL` (token 间延迟)       | 两个连续 token 之间的时间（例如，从 token i-1 到 token i）                             |
+| `TPOT` (每个输出 token 的时间) | 请求中所有输出 token 的**平均 ITL**                                              |
+| `Latency / E2E` (端到端延迟) | 处理请求的总时间，即 TTFT + 所有 ITL 的总和，或者等效地，提交请求和接收最后一个输出 token 之间的时间           |
+| `Throughput`            | 每秒处理的总 token 数（输入、输出或两者），或者每秒请求数                                       |
+| `Goodput`               | 满足服务级别目标 (SLO) 的吞吐量，例如最大 TTFT、TPOT 或 e2e 延迟。例如，只计算满足这些 SLO 的请求中的 token |
 
 ![图 16：ttft, itl, e2e 延迟](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/latency_diagram.png)
 
@@ -867,13 +854,9 @@ vllm bench latency \
 vLLM 还包括我跳过的专门处理。例如：
 
 - **多样化的硬件后端**：TPU、AWS Neuron (Trainium/Inferentia) 等。
-
 - **架构/技术**：`MLA`、`MoE`、encoder-decoder (例如 Whisper)、pooling/embedding 模型、`EPLB`、`m-RoPE`、`LoRA`、`ALiBi`、无注意力变体、滑动窗口注意力、多模态 LM 和状态空间模型 (例如 Mamba/Mamba-2, Jamba)
-
 - **TP/PP/SP**
-
 - **混合 KV-cache 逻辑** (Jenga)，更复杂的采样方法如 beam sampling 等
-
 - **实验性**：异步调度
 
 好处是，这些中的大多数都与上面描述的主流程正交——你几乎可以将它们视为“插件”（当然，在实践中存在一些耦合）。
@@ -891,23 +874,13 @@ vLLM 还包括我跳过的专门处理。例如：
 ### 参考文献
 
 1. vLLM [https://github.com/vllm-project/vllm](https://github.com/vllm-project/vllm "null")
-
 2. “Attention Is All You Need” [https://arxiv.org/abs/1706.03762](https://arxiv.org/abs/1706.03762 "null")
-
 3. “Efficient Memory Management for Large Language Model Serving with PagedAttention” [https://arxiv.org/abs/2309.06180](https://arxiv.org/abs/2309.06180 "null")
-
 4. “DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model” [https://arxiv.org/abs/2405.04434](https://arxiv.org/abs/2405.04434 "null")
-
 5. “Jenga: Effective Memory Management for Serving LLM with Heterogeneity” [https://arxiv.org/abs/2503.18292](https://arxiv.org/abs/2503.18292 "null")
-
 6. “Orca: A Distributed Serving System for Transformer-Based Generative Models” [https://www.usenix.org/conference/osdi22/presentation/yu](https://www.usenix.org/conference/osdi22/presentation/yu "null")
-
 7. “XGrammar: Flexible and Efficient Structured Generation Engine for Large Language Models” [https://arxiv.org/abs/2411.15100](https://arxiv.org/abs/2411.15100 "null")
-
 8. “Accelerating Large Language Model Decoding with Speculative Sampling” [https://arxiv.org/abs/2302.01318](https://arxiv.org/abs/2302.01318 "null")
-
 9. “EAGLE: Speculative Sampling Requires Rethinking Feature Uncertainty” [https://arxiv.org/abs/2401.15077](https://arxiv.org/abs/2401.15077 "null")
-
 10. “Medusa: Simple LLM Inference Acceleration Framework with Multiple Decoding Heads” [https://arxiv.org/abs/2401.10774](https://arxiv.org/abs/2401.10774 "null")
-
 11. LMCache [https://github.com/LMCache/LMCache](https://github.com/LMCache/LMCache "null")
