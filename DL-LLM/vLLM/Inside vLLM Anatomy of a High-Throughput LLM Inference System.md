@@ -406,7 +406,7 @@ Speculative decoding(投机解码) [8] 通过引入一个较小的 draft LM 来�
         - 如果发生拒绝，则在该位置创建一个新的重新平衡的分布（`p_large - p_draft`，将最小值钳位在 0，归一化以使总和为 1）并从中采样最后一个 token
         - 注: 
 	        - 发生reject意味着Draft LM已经占据了概率质量, 需要在剩余的概率空间(`p_large - p_draft`)中采样
-	        - 每个p都是vocab size维度的概率向量
+	        - 每个p都是vocab size维的概率向量
 
 **为什么这行得通**：虽然我们使用小型模型来提出候选，但接受/拒绝规则保证了序列在期望上与我们逐个 token 从大型模型中采样完全相同。这意味着 speculative decoding 在统计上等同于标准的自回归 decoding——但可能快得多，因为一次大型模型的前向传播最多可以产生 `k+1` 个 token。
 
@@ -418,8 +418,10 @@ vLLM V1 不支持 LLM draft model 方法，而是实现了更快但不太准确�
 每个方案的一句话总结：
 
 - **n-gram**：取最后 `prompt_lookup_max` 个 token；在序列中找到一个先前的匹配项；如果找到，则提出该匹配项后面的 `k` 个 token；否则减少窗口并重试直到 `prompt_lookup_min` 
+
 > [!NOTE]
 > 当前的实现返回第一个匹配项后的 `k` 个 token。引入一个近因偏见并反转搜索方向似乎更自然？（即最后一个匹配项）
+
 - **Eagle**：对大型 LM 进行“模型手术”——保留 embeddings 和 LM head，用一个轻量级的 MLP 替换 Transformer 堆栈；将其微调为一个廉价的 draft
 - **Medusa**：在大型模型的顶部（LM head 之前的 embeddings）训练辅助线性头，以并行预测接下来的 `k` 个 token；使用这些头比运行一个单独的小型 LM 更有效地提出 token
 
@@ -453,7 +455,7 @@ if __name__ == "__main__":
 
 这在 vLLM 中是如何工作的？
 
-**设置（在引擎构建期间）：**
+**设置（在引擎构建期间）：** 
 
 1. 初始化设备：创建一个 `drafter`（draft model，例如，`NgramProposer`）和一个 `rejection_sampler`（其部分是用 Triton 编写的）。
 2. 加载模型：加载 draft model 权重（对于 n-gram 是无操作）。
@@ -479,13 +481,17 @@ if __name__ == "__main__":
 
 Prefill 和 decode 具有非常不同的性能概况（计算密集型 vs. 内存带宽密集型），因此将它们的执行分开是一种明智的设计。它对延迟提供了更严格的控制——包括 `TFTT`（首个 token 时间）和 `ITL`（token 间延迟）——更多内容将在[基准测试](https://blog.vllm.ai/2025/09/05/anatomy-of-vllm.html#benchmarks-and-auto-tuning---latency-vs-throughput "null")部分讨论。
 
+> [!NOTE]
+> decode阶段的指标有多种称呼 `ITL` (Inter-Token Latency) ,  `TOPT` (Time Per Output Token)...
+
 在实践中，我们运行 `N` 个 vLLM prefill 实例和 `M` 个 vLLM decode 实例，并根据实时请求组合自动扩展它们。Prefill worker 将 KV 写入专用的 KV-cache 服务；decode worker 从中读取。这将长的、突发性的 prefill 与稳定的、对延迟敏感的 decode 隔离开来。
 
 这在 vLLM 中是如何工作的？
 
 为清楚起见，下面的示例依赖于 `SharedStorageConnector`，这是一个用于说明机制的调试连接器实现。
 
-> [!NOTE]Connector 是 vLLM 用于处理实例之间 KV 交换的抽象。Connector 接口尚不稳定，计划在近期进行一些改进，其中将涉及一些更改，其中一些可能是破坏性的。
+> [!NOTE]
+> Connector 是 vLLM 用于处理实例之间 KV 交换的抽象。Connector 接口尚不稳定，计划在近期进行一些改进，其中将涉及一些更改，其中一些可能是破坏性的。
 
 我们启动 2 个 vLLM 实例（GPU 0 用于 prefill，GPU 1 用于 decode），然后在它们之间传输 KV cache：
 
@@ -585,7 +591,7 @@ if __name__ == "__main__":
 
 这是一个图示示例：
 
-![图 12：disaggregated P/D](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/)
+![图 12：disaggregated P/D](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/pd.png)
 
 > **附加说明：**
 >
@@ -613,34 +619,25 @@ if __name__ == "__main__":
 
 在这个阶段，我们需要多个 GPU 进程（worker）和一个协调它们的编排层。这正是 `MultiProcExecutor` 所提供的。
 
-![图 13：TP=8 设置中的 MultiProcExecutor（驱动 worker 为 rank 0）](https://blog.vllm.ai/2025/09/05/anatomy-of-vllm.html#from-uniprocexecutor-to-multiprocexecutor "null")
+![图 13：TP=8 设置中的 MultiProcExecutor（驱动 worker 为 rank 0）](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/multiprocexecutor.png)
 
 这在 vLLM 中是如何工作的：
 
 1. `MultiProcExecutor` 初始化一个 `rpc_broadcast_mq` 消息队列（在底层使用共享内存实现）。
-
 2. 构造函数遍历 `world_size`（例如 `TP=8 ⇒ world_size=8`）并通过 `WorkerProc.make_worker_process` 为每个 rank 派生一个守护进程。
-
 3. 对于每个 worker，父进程首先创建一个读写管道。
-
 4. 新进程运行 `WorkerProc.worker_main`，它实例化一个 worker（经历与 `UniprocExecutor` 中相同的“初始化设备”、“加载模型”等过程）。
-
 5. 每个 worker 确定它是否是驱动程序（TP 组中的 rank 0）或普通 worker。每个 worker 设置两个队列：
-
     - `rpc_broadcast_mq`（与父进程共享）用于接收工作。
-
     - `worker_response_mq` 用于发回响应。
 
 6. 在初始化期间，每个子进程通过管道将其 `worker_response_mq` 句柄发送给父进程。一旦全部收到，父进程就会解除阻塞——这完成了协调。
-
 7. Worker 然后进入一个忙碌循环，在 `rpc_broadcast_mq.dequeue` 上阻塞。当一个工作项到达时，它们执行它（就像在 `UniprocExecutor` 中一样，但现在使用 TP/PP 特定的分区工作）。结果通过 `worker_response_mq.enqueue` 发回。
-
 8. 在运行时，当一个请求到达时，`MultiProcExecutor` 将其排入所有子 worker 的 `rpc_broadcast_mq`（非阻塞）。然后它在指定的输出 rank 的 `worker_response_mq.dequeue` 上等待以收集最终结果。
 
 从引擎的角度来看，没有任何改变——所有这些多进程复杂性都通过调用 Model Executor 的 `execute_model` 抽象掉了。
 
 - 在 `UniProcExecutor` 的情况下：execute_model 直接导致在 worker 上调用 execute_model
-
 - 在 `MultiProcExecutor` 的情况下：execute_model 间接导致通过 `rpc_broadcast_mq` 在每个 worker 上调用 execute_model
 
 此时，我们可以使用相同的引擎接口运行资源允许的任何大小的模型。
@@ -653,7 +650,7 @@ if __name__ == "__main__":
 
 如果模型需要 `TP=4`，我们可以这样配置节点。
 
-![图 14：具有 2 个 8xH100 节点的服务器配置（1 个无头，1 个 api 服务器）](https://blog.vllm.ai/2025/09/05/anatomy-of-vllm.html#distributed-system-serving-vllm "null")
+![图 14：具有 2 个 8xH100 节点的服务器配置（1 个无头，1 个 api 服务器）](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/server_setup.png)
 
 在第一个节点上，以无头模式运行引擎（无 API 服务器），并使用以下参数：
 
@@ -684,7 +681,8 @@ vllm serve <model-name> \
   --data-parallel-rpc-port 13345
 ```
 
-> [!NOTE]这假设网络已配置，以便所有节点都可以访问指定的 IP 和端口。
+> [!NOTE]
+> 这假设网络已配置，以便所有节点都可以访问指定的 IP 和端口。
 
 这在 VLLM 中是如何工作的？
 
@@ -714,25 +712,22 @@ vllm serve <model-name> \
 
 TL;DR: 我们最终得到 4 个子进程（每个 DP 副本一个），每个进程运行一个主、输入和输出线程。它们与 DP 协调器和前端完成协调握手，然后每个进程的三个线程都在稳态忙碌循环中运行。
 
-![图 15：具有 4 个 DP 副本运行 4 个 DPEngineCoreProc 的分布式系统](https://blog.vllm.ai/2025/09/05/anatomy-of-vllm.html#distributed-system-serving-vllm "null")
+![图 15：具有 4 个 DP 副本运行 4 个 DPEngineCoreProc 的分布式系统](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/dpenginecoreproc.png)
 
 **当前稳态**：
 
 - **输入线程** — 在输入套接字上阻塞，直到从 API 服务器路由一个请求；收到后，它解码有效负载，通过 `input_queue.put_nowait(...)` 将一个工作项排队，然后返回到在套接字上阻塞。
-
 - **主线程** — 在 `input_queue.get(...)` 上唤醒，将请求馈送到引擎；`MultiProcExecutor` 运行前向传播并将结果排队到 `output_queue`。
-
 - **输出线程** — 在 `output_queue.get(...)` 上唤醒，将结果发回 API 服务器，然后恢复阻塞。
 
 **附加机制**：
 
 - **DP wave counter** — 系统跟踪“wave”；当所有引擎都变为空闲时，它们会静止下来，当新工作到达时，计数器会增加（对协调/指标有用）。
-
 - **控制消息** — API 服务器可以发送的不仅仅是推理请求（例如，中止和实用程序/控制 RPC）。
-
 - **用于锁步的虚拟步骤** — 如果任何 DP 副本有工作，所有副本都执行一个前向步骤；没有请求的副本执行一个虚拟步骤以参与所需的同步点（避免阻塞活动副本）。
 
-> [!NOTE]锁步说明：这实际上只对 MoE 模型是必需的，其中 expert 层形成一个 EP 或 TP 组，而 attention 层仍然是 DP。目前总是与 DP 一起完成——这只是因为“内置”非 MoE DP 的用途有限，因为您可以只运行多个独立的 vLLM，并以正常方式在它们之间进行负载均衡。
+> [!NOTE]
+> 锁步说明：这实际上只对 MoE 模型是必需的，其中 expert 层形成一个 EP 或 TP 组，而 attention 层仍然是 DP。目前总是与 DP 一起完成——这只是因为“内置”非 MoE DP 的用途有限，因为您可以只运行多个独立的 vLLM，并以正常方式在它们之间进行负载均衡。
 
 现在是第二部分，API 服务器节点上发生了什么？
 
@@ -743,17 +738,13 @@ TL;DR: 我们最终得到 4 个子进程（每个 DP 副本一个），每个进
 在 `MPClient` 的父类中，`launch_core_engines` 函数运行并：
 
 1. 创建用于启动握手的 ZMQ 地址（如在无头节点上所见）。
-
 2. 派生一个 `DPCoordinator` 进程。
-
 3. 创建一个 `CoreEngineProcManager`（与无头节点上相同）。
 
 在 `AsyncMPClient` (`MPClient` 的子类) 中，我们：
 
 1. 创建一个 `outputs_queue` (`asyncio.Queue`)。
-
 2. 我们创建一个 asyncio 任务 `process_outputs_socket`，它（通过输出套接字）与所有 4 个 `DPEngineCoreProc` 的输出线程通信，并写入 `outputs_queue`。
-
 3. 随后，`AsyncLLM` 的另一个 asyncio 任务 `output_handler` 从此队列中读取，并最终将信息发送到 `create_completion` 函数。
 
 在 `DPAsyncMPClient` 中，我们创建一个 asyncio 任务 `run_engine_stats_update_task`，它与 DP 协调器通信。
@@ -761,17 +752,13 @@ TL;DR: 我们最终得到 4 个子进程（每个 DP 副本一个），每个进
 DP 协调器在前端（API 服务器）和后端（引擎核心）之间进行协调。它：
 
 - 定期向前端的 `run_engine_stats_update_task` 发送负载均衡信息（队列大小、等待/运行中的请求）。
-
 - 通过动态更改引擎数量来处理来自前端的 `SCALE_ELASTIC_EP` 命令（仅适用于 Ray 后端）。
-
 - 向后端发送 `START_DP_WAVE` 事件（由前端触发）并报告 wave-state 更新。
 
 总而言之，前端 (`AsyncLLM`) 运行多个 asyncio 任务（请记住：并发，非并行）：
 
 - 一类任务通过 `generate` 路径处理输入请求（每个新的客户端请求都会派生一个新的 asyncio 任务）。
-
 - 两个任务（`process_outputs_socket`、`output_handler`）处理来自底层引擎的输出消息。
-
 - 一个任务（`run_engine_stats_update_task`）维护与 DP 协调器的通信：发送 wave 触发器、轮询 LB 状态以及处理动态扩展请求。
 
 最后，主服务器进程创建一个 FastAPI 应用程序并挂载诸如 `OpenAIServingCompletion` 和 `OpenAIServingChat` 之类的端点，这些端点公开 `/completion`、`/chat/completion` 等。然后通过 Uvicorn 提供堆栈服务。
@@ -792,27 +779,18 @@ curl -X POST http://localhost:8000/v1/completions -H "Content-Type: application/
 接下来会发生什么：
 
 1. 请求到达 API 服务器上 `OpenAIServingCompletion` 的 `create_completion` 路由。
-
 2. 该函数异步地对prompt进行分词，并准备元数据（请求 ID、采样参数、时间戳等）。
-
 3. 然后它调用 `AsyncLLM.generate`，其流程与同步引擎相同，最终调用 `DPAsyncMPClient.add_request_async`。
-
 4. 这反过来又调用 `get_core_engine_for_request`，它根据 DP 协调器的状态在引擎之间进行负载均衡（选择得分最低/负载最低的那个：`score = len(waiting) * 4 + len(running)`）。
-
 5. `ADD` 请求被发送到所选引擎的 `input_socket`。
-
 6. 在该引擎处：
-
     - 输入线程 — 解除阻塞，从输入套接字解码数据，并将一个工作项放入主线程的 `input_queue` 中。
-
     - 主线程 — 在 `input_queue` 上解除阻塞，将请求添加到引擎，并重复调用 `engine_core.step()`，将中间结果排队到 `output_queue`，直到满足停止条件。
-
-> [!NOTE]提醒：`step()` 调用调度器、Model Executor（它本身可以是 `MultiProcExecutor`！）等。我们已经看到过这个了！
-
-- 输出线程 — 在 `output_queue` 上解除阻塞，并通过输出套接字发回结果。
+    - 输出线程 — 在 `output_queue` 上解除阻塞，并通过输出套接字发回结果。
+> [!NOTE]
+> 提醒：`step()` 调用调度器、Model Executor（它本身可以是 `MultiProcExecutor`！）等。我们已经看到过这个了！
 
 7. 这些结果触发了 `AsyncLLM` 输出 asyncio 任务（`process_outputs_socket` 和 `output_handler`），这些任务将 token 传播回 FastAPI 的 `create_completion` 路由。
-
 8. FastAPI 附加元数据（完成原因、logprobs、使用信息等）并通过 Uvicorn 向您的终端返回一个 `JSONResponse`！
 
 就这样，您的补全回来了——整个分布式机制隐藏在一个简单的 `curl` 命令后面！:) 太有趣了！！！
@@ -831,7 +809,6 @@ curl -X POST http://localhost:8000/v1/completions -H "Content-Type: application/
 在最高层次上，有两个相互竞争的指标：
 
 1. **延迟** — 从提交请求到返回 token 的时间
-
 2. **吞吐量** — 系统每秒可以生成/处理的 token/请求数
 
 **延迟**对于交互式应用程序最重要，用户在这些应用程序中等待响应。
@@ -849,7 +826,7 @@ curl -X POST http://localhost:8000/v1/completions -H "Content-Type: application/
 |`Throughput`|每秒处理的总 token 数（输入、输出或两者），或者每秒请求数|
 |`Goodput`|满足服务级别目标 (SLO) 的吞吐量，例如最大 TTFT、TPOT 或 e2e 延迟。例如，只计算满足这些 SLO 的请求中的 token|
 
-![图 16：ttft, itl, e2e 延迟](https://blog.vllm.ai/2025/09/05/anatomy-of-vllm.html#benchmarks-and-auto-tuning---latency-vs-throughput "null")
+![图 16：ttft, itl, e2e 延迟](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/latency_diagram.png)
 
 这是一个解释这两个指标竞争性质的简化模型。
 
@@ -859,7 +836,7 @@ curl -X POST http://localhost:8000/v1/completions -H "Content-Type: application/
 
 一个 roofline 模型有助于理解这一点：在饱和批次 `B_sat` 以下，步骤时间由 HBM 带宽主导（逐层将权重流式传输到片上内存），因此步骤延迟几乎是平坦的——计算 1 个 vs 10 个 token 可能需要相似的时间。超过 `B_sat`，kernel 变得受计算限制，步骤时间大致随 `B` 增长；每个额外的 token 都会增加 ITL。
 
-![图 17：roofline 性能模型](https://blog.vllm.ai/2025/09/05/anatomy-of-vllm.html#benchmarks-and-auto-tuning---latency-vs-throughput "null")
+![图 17：roofline 性能模型](Inside%20vLLM%20Anatomy%20of%20a%20High-Throughput%20LLM%20Inference%20System.assets/roofline.png)
 
 > **注意：** 为了更严谨地处理，我们必须考虑 kernel 自动调优：随着 `B` 的增长，运行时可能会切换到对该形状更有效的 kernel，从而改变实现的性能 `P_kernel`。步骤延迟为 `t = FLOPs_step / P_kernel`，其中 `FLOPs_step` 是该步骤中的工作量。您可以看到，当 `P_kernel` 达到 `P_peak` 时，每一步更多的计算将直接导致延迟增加。
 
@@ -870,9 +847,7 @@ vLLM 提供了一个 `vllm bench {serve,latency,throughput}` CLI，它包装了 
 以下是这些脚本的作用：
 
 - **latency** — 使用短输入（默认为 32 个 token）并以小批量（默认为 8）采样 128 个输出 token。它运行几次迭代并报告该批次的 e2e 延迟。
-
 - **throughput** — 一次性提交一组固定的prompt（默认：1000 个 ShareGPT 样本）（也称为 `QPS=Inf` 模式），并报告整个运行过程中的输入/输出/总 token 数和每秒请求数。
-
 - **serve** — 启动一个 vLLM 服务器，并通过从泊松（或更一般的，伽马）分布中采样请求的到达间隔时间来模拟真实世界的工作负载。它在一个时间窗口内发送请求，测量我们讨论过的所有指标，并且可以选择性地强制执行服务器端最大并发数（通过一个信号量，例如将服务器限制为 64 个并发请求）。
 
 以下是如何运行延迟脚本的示例：
@@ -885,7 +860,8 @@ vllm bench latency \
   --batch-size 8
 ```
 
-> [!NOTE]CI 中使用的基准测试配置位于 `.buildkite/nightly-benchmarks/tests` 下。
+> [!NOTE]
+> CI 中使用的基准测试配置位于 `.buildkite/nightly-benchmarks/tests` 下。
 
 还有一个自动调优脚本，它驱动 serve 基准测试来找到满足目标 SLO（例如，“在保持 p99 e2e < 500 ms 的同时最大化吞吐量”）的参数设置，并返回一个建议的配置。
 
