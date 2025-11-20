@@ -216,7 +216,8 @@ sh -c "$(curl -fsLS get.chezmoi.io)"
 sudo mv ./bin/chezmoi /usr/local/bin/
 
 # 或者将~/bin添加到PATH中
-mv ./bin/chezmoi ~/.local/bin
+mkdir -p ~/.local/bin
+mv ./bin/chezmoi ~/.local/bin/
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
 ```
 
